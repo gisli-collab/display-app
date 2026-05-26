@@ -1,10 +1,10 @@
 {
-  "name": "store-display-app-barcode-price",
-  "version": "1.1.0",
+  "name": "store-display-app-csv-manual",
+  "version": "1.2.0",
   "private": true,
-  "description": "Netlify display app that loads product data from n8n, scans barcodes, and sends price updates to n8n.",
+  "description": "Static Netlify product display app using manual CSV upload/replacement with barcode lookup and local price editing.",
   "scripts": {
-    "start": "netlify dev",
+    "start": "npx serve .",
     "build": "echo 'Static site; no build step required'"
   }
 }
