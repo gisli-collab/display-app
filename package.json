@@ -1,16 +1,10 @@
 {
-  "name": "store-display-app",
-  "version": "1.2.0",
+  "name": "store-display-app-barcode-price",
+  "version": "1.1.0",
   "private": true,
-  "description": "Netlify product display app that can read CSV/JSON product data and receive updates from n8n.",
+  "description": "Netlify display app that loads product data from n8n, scans barcodes, and sends price updates to n8n.",
   "scripts": {
-    "dev": "netlify dev",
-    "check": "node --check app.js && node --check netlify/functions/products.js"
-  },
-  "dependencies": {
-    "@netlify/blobs": "latest"
-  },
-  "devDependencies": {
-    "netlify-cli": "latest"
+    "start": "netlify dev",
+    "build": "echo 'Static site; no build step required'"
   }
 }
