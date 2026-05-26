@@ -1,12 +1,9 @@
-[functions]
-  directory = "netlify/functions"
+[build]
+  publish = "."
+  command = ""
 
-[[redirects]]
-  from = "/api/products"
-  to = "/.netlify/functions/products"
-  status = 200
-
-[[redirects]]
-  from = "/api/update-price"
-  to = "/.netlify/functions/update-price"
-  status = 200
+[[headers]]
+  for = "/data/*.csv"
+  [headers.values]
+    Content-Type = "text/csv; charset=utf-8"
+    Cache-Control = "no-cache"
