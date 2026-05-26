@@ -1,16 +1,12 @@
 const DEFAULT_CONFIG = {
   storeName: 'Store Product Display',
-  dataSource: '/api/products',
-  priceUpdateSource: '/api/update-price',
-  dataFormat: 'auto',
-  loadOnStart: false,
+  dataSource: './data/products.csv',
   currency: 'ISK',
   locale: 'is-IS',
   priceField: 'cost',
   imageField: 'img',
   barcodeField: 'barcodex',
-  sourceCodeField: 'source_code',
-  defaultSort: 'source-code-asc'
+  defaultSort: 'name-asc'
 };
 
 const CONFIG = {
@@ -24,9 +20,6 @@ const els = {
   totalCategories: document.querySelector('#total-categories'),
   averagePrice: document.querySelector('#average-price'),
   searchInput: document.querySelector('#search-input'),
-  loadProducts: document.querySelector('#load-products'),
-  loadStatus: document.querySelector('#load-status'),
-  refreshData: document.querySelector('#refresh-data'),
   categoryFilter: document.querySelector('#category-filter'),
   brandFilter: document.querySelector('#brand-filter'),
   sortSelect: document.querySelector('#sort-select'),
@@ -36,6 +29,8 @@ const els = {
   categoryChips: document.querySelector('#category-chips'),
   productGrid: document.querySelector('#product-grid'),
   emptyState: document.querySelector('#empty-state'),
+  fileInput: document.querySelector('#csv-file-input'),
+  downloadCsv: document.querySelector('#download-csv'),
   dialog: document.querySelector('#product-dialog'),
   dialogClose: document.querySelector('#dialog-close'),
   productDetails: document.querySelector('#product-details'),
@@ -60,10 +55,12 @@ const priceFormatter = new Intl.NumberFormat(CONFIG.locale || undefined, {
 });
 
 let products = [];
+let currentRows = [];
+let currentHeaders = [];
 let productRouteMap = new Map();
 let productBarcodeMap = new Map();
-let activeSourceName = CONFIG.dataSource || 'not configured';
-let hasLoadedOnce = false;
+let activeSourceName = CONFIG.dataSource;
+let csvDirty = false;
 let html5QrcodeScanner = null;
 let scannerRunning = false;
 let lastScannerText = '';
@@ -76,12 +73,7 @@ async function init() {
   applyDefaultSort();
   bindEvents();
   resetSummary();
-  buildFilterOptions();
-  updateScannerStatus('Load products, then scan or enter a barcode.');
-
-  if (CONFIG.loadOnStart) {
-    await loadProductsFromN8n();
-  }
+  await loadInitialData();
 }
 
 function bindEvents() {
@@ -90,8 +82,7 @@ function bindEvents() {
   els.brandFilter.addEventListener('change', render);
   els.sortSelect.addEventListener('change', render);
   els.clearFilters.addEventListener('click', clearFilters);
-  els.loadProducts.addEventListener('click', loadProductsFromN8n);
-  els.refreshData.addEventListener('click', loadProductsFromN8n);
+  els.downloadCsv.addEventListener('click', downloadCurrentCsv);
   els.lookupBarcode.addEventListener('click', () => lookupBarcodeAndOpen(els.barcodeLookup.value, { fromScanner: false }));
   els.barcodeLookup.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
@@ -101,6 +92,20 @@ function bindEvents() {
   });
   els.startScanner.addEventListener('click', startBarcodeScanner);
   els.stopScanner.addEventListener('click', stopBarcodeScanner);
+
+  els.fileInput.addEventListener('change', async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = parseCsvWithHeaders(text);
+      setProducts(parsed.rows, file.name, parsed.headers, { dirty: false });
+      updateScannerStatus(`Loaded ${products.length} products from ${file.name}. Scan or enter a barcode.`);
+    } catch (error) {
+      showError(`Could not read CSV file: ${error.message}`);
+    }
+  });
 
   els.dialogClose.addEventListener('click', () => els.dialog.close());
   els.dialog.addEventListener('click', (event) => {
@@ -117,103 +122,49 @@ function bindEvents() {
   window.addEventListener('hashchange', openProductFromHash);
 }
 
-async function loadProductsFromN8n() {
-  if (!CONFIG.dataSource) {
-    showError('No data source is configured. Add your n8n webhook URL to config.js, or set dataSource to /api/products and set N8N_PRODUCTS_WEBHOOK_URL in Netlify.');
-    return;
-  }
-
-  setLoadingState(true, 'Loading products from n8n...');
-
+async function loadInitialData() {
   try {
-    const rows = await loadProductsFromSource(CONFIG.dataSource);
-    setProducts(rows, CONFIG.dataSource);
-    const count = products.length;
-    hasLoadedOnce = true;
-    setLoadingState(false, `Loaded ${count} product${count === 1 ? '' : 's'}.`);
-    updateScannerStatus(`Loaded ${count} product${count === 1 ? '' : 's'}. Scan or enter a barcode.`);
-  } catch (error) {
-    setLoadingState(false, 'Load failed.');
-    updateScannerStatus('Could not load products.');
-    showError(buildFriendlyError(error));
-  }
-}
-
-async function loadProductsFromSource(source) {
-  const response = await fetch(source, {
-    method: 'GET',
-    cache: 'no-store',
-    headers: {
-      Accept: 'application/json, text/csv, text/plain;q=0.9, */*;q=0.8'
+    const response = await fetch(CONFIG.dataSource, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} while loading ${CONFIG.dataSource}`);
     }
-  });
 
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    const detail = errorText ? `: ${errorText.slice(0, 220)}` : '';
-    throw new Error(`HTTP ${response.status}${detail}`);
+    const text = await response.text();
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('json') || CONFIG.dataSource.toLowerCase().includes('.json');
+
+    if (isJson) {
+      const rows = normalizeJsonPayload(JSON.parse(text));
+      setProducts(rows, CONFIG.dataSource, collectHeaders(rows), { dirty: false });
+    } else {
+      const parsed = parseCsvWithHeaders(text);
+      setProducts(parsed.rows, CONFIG.dataSource, parsed.headers, { dirty: false });
+    }
+
+    updateScannerStatus(`Loaded ${products.length} products. Scan or enter a barcode.`);
+  } catch (error) {
+    showError(`Could not load product data. ${error.message}`);
+    updateScannerStatus('Could not load the default CSV. Upload a CSV file, then scan or enter a barcode.');
   }
-
-  const text = await response.text();
-  const contentType = response.headers.get('content-type') || '';
-  const format = detectDataFormat(source, contentType, text);
-
-  if (format === 'json') {
-    return normalizeJsonPayload(JSON.parse(text));
-  }
-
-  return parseCsv(text);
-}
-
-function detectDataFormat(source, contentType, text) {
-  if (CONFIG.dataFormat && CONFIG.dataFormat !== 'auto') {
-    return CONFIG.dataFormat.toLowerCase();
-  }
-
-  const lowerSource = String(source || '').toLowerCase();
-  const lowerContentType = contentType.toLowerCase();
-
-  if (lowerContentType.includes('json') || lowerSource.includes('.json')) return 'json';
-  if (lowerContentType.includes('csv') || lowerSource.includes('.csv')) return 'csv';
-
-  const trimmed = String(text || '').trim();
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) return 'json';
-  return 'csv';
 }
 
 function normalizeJsonPayload(payload) {
-  const rows = extractRows(payload);
-  return rows.map((row) => {
-    if (row && typeof row === 'object' && row.json && typeof row.json === 'object') {
-      return row.json;
-    }
-    return row;
-  });
-}
-
-function extractRows(payload) {
   if (Array.isArray(payload)) return payload;
-
   if (payload && typeof payload === 'object') {
     if (Array.isArray(payload.products)) return payload.products;
     if (Array.isArray(payload.data)) return payload.data;
     if (Array.isArray(payload.rows)) return payload.rows;
     if (Array.isArray(payload.items)) return payload.items;
-
-    if (typeof payload.csv === 'string') return parseCsv(payload.csv);
-    if (typeof payload.body === 'string') {
-      const body = payload.body.trim();
-      if (body.startsWith('{') || body.startsWith('[')) return normalizeJsonPayload(JSON.parse(body));
-      return parseCsv(body);
-    }
   }
-
-  throw new Error('JSON must be an array, an n8n item array, or an object with products/data/rows/items.');
+  throw new Error('JSON must be an array, or an object with products/data/rows/items.');
 }
 
-function setProducts(rows, sourceName) {
+function setProducts(rows, sourceName, headers = [], options = {}) {
   activeSourceName = sourceName;
-  products = rows
+  currentRows = rows.map((row) => ({ ...(row && typeof row === 'object' ? row : { value: row }) }));
+  currentHeaders = normalizeHeaders(headers.length ? headers : collectHeaders(currentRows));
+
+  products = currentRows
     .map((row, index) => normalizeProduct(row, index))
     .filter((product) => product.name);
 
@@ -232,13 +183,16 @@ function setProducts(rows, sourceName) {
     });
   });
 
+  csvDirty = Boolean(options.dirty);
+  els.downloadCsv.disabled = products.length === 0;
+
   buildFilterOptions();
   renderSummary();
   render();
   openProductFromHash();
 }
 
-function parseCsv(text) {
+function parseCsvWithHeaders(text) {
   const cleanText = String(text || '').replace(/^\uFEFF/, '');
   const table = [];
   let row = [];
@@ -271,20 +225,45 @@ function parseCsv(text) {
   row.push(field);
   if (row.some((value) => value.trim() !== '')) table.push(row);
 
-  if (table.length < 2) return [];
+  if (table.length < 1) return { headers: [], rows: [] };
 
   const headers = table[0].map((header) => cleanHeader(header));
-  return table.slice(1).map((values) => {
+  const rows = table.slice(1).map((values) => {
     const item = {};
     headers.forEach((header, index) => {
       item[header] = values[index] ?? '';
     });
     return item;
   });
+
+  return { headers, rows };
 }
 
 function cleanHeader(value) {
   return String(value || '').replace(/^\uFEFF/, '').trim();
+}
+
+function normalizeHeaders(headers) {
+  const cleaned = uniqueStrings(headers.map(cleanHeader));
+  const required = [CONFIG.priceField, CONFIG.barcodeField, CONFIG.imageField, 'name', 'weight', 'brand'];
+  required.forEach((header) => {
+    if (header && !cleaned.some((existing) => existing.toLowerCase() === String(header).toLowerCase())) {
+      cleaned.push(header);
+    }
+  });
+  return cleaned;
+}
+
+function collectHeaders(rows) {
+  const headers = [];
+  rows.forEach((row) => {
+    Object.keys(row || {}).forEach((key) => {
+      if (!headers.some((header) => header.toLowerCase() === key.toLowerCase())) {
+        headers.push(key);
+      }
+    });
+  });
+  return headers;
 }
 
 function normalizeProduct(row, index) {
@@ -294,7 +273,6 @@ function normalizeProduct(row, index) {
   const barcodeValues = collectBarcodeValues(sourceRow);
   const barcode = barcodeValues[0] || '';
   const barcodeAliases = buildBarcodeAliases(barcodeValues);
-  const sourceCode = getSourceCode(sourceRow);
   const costRaw = getField(sourceRow, [CONFIG.priceField, 'price', 'regular_price']);
   const price = parsePrice(costRaw);
   const category = getField(sourceRow, ['store_categories', 'store_category', 'category']) || 'Uncategorized';
@@ -303,19 +281,19 @@ function normalizeProduct(row, index) {
   const weight = getField(sourceRow, ['weight', 'package_weight', 'size']);
   const status = getField(sourceRow, ['status']);
   const imageUrl = normalizeImageUrl(getField(sourceRow, [CONFIG.imageField, 'image', 'image_url', 'img_url']));
-  const idBase = barcode || sourceCode || `${name}-${index + 1}`;
+  const idBase = barcode || `${name}-${index + 1}`;
   const routeKey = slugify(idBase || `product-${index + 1}`);
 
   return {
     id: `${routeKey}-${index + 1}`,
     routeKey,
-    rowNumber: index + 1,
+    rowNumber: index + 2,
+    rowIndex: index,
     sourceRow,
     name: name.trim(),
     brand: brand.trim(),
     barcode: barcode.trim(),
     barcodeAliases,
-    sourceCode: sourceCode.trim(),
     price,
     priceRaw: costRaw.trim(),
     category: category.trim(),
@@ -324,7 +302,7 @@ function normalizeProduct(row, index) {
     weight: weight.trim(),
     status: status.trim(),
     imageUrl,
-    searchText: [name, brand, barcode, barcodeAliases.join(' '), sourceCode, category, categories, ingredients, weight]
+    searchText: [name, brand, barcode, barcodeAliases.join(' '), category, categories, ingredients, weight]
       .join(' ')
       .toLocaleLowerCase(CONFIG.locale || undefined)
   };
@@ -402,22 +380,6 @@ function addBarcodeAliasVariants(value, aliases) {
   }
 }
 
-function getSourceCode(row) {
-  const direct = getField(row, [
-    CONFIG.sourceCodeField,
-    'source_code',
-    'source code',
-    'sourceCode',
-    'source',
-    'store_source_code',
-    'inventory_source_code'
-  ]);
-  if (direct) return direct;
-
-  const sourceLikeKey = Object.keys(row).find((key) => normalizeKey(key).includes('sourcecode'));
-  return sourceLikeKey ? String(row[sourceLikeKey] || '') : '';
-}
-
 function normalizeKey(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -437,6 +399,18 @@ function getField(row, keys) {
   return '';
 }
 
+function setField(row, preferredKey, fallbackKeys, value) {
+  const keys = [preferredKey, ...(fallbackKeys || [])].filter(Boolean);
+  const foundKey = keys
+    .map((key) => Object.keys(row).find((rowKey) => rowKey.toLowerCase() === String(key).toLowerCase()))
+    .find(Boolean);
+  const targetKey = foundKey || preferredKey || 'price';
+  row[targetKey] = value;
+  if (!currentHeaders.some((header) => header.toLowerCase() === targetKey.toLowerCase())) {
+    currentHeaders.push(targetKey);
+  }
+}
+
 function parsePrice(value) {
   const cleaned = String(value || '')
     .replace(/[^0-9,.-]/g, '')
@@ -445,9 +419,9 @@ function parsePrice(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function formatPriceForData(value) {
+function formatPriceForCsv(value) {
   if (!Number.isFinite(value)) return '';
-  return CONFIG.currency === 'ISK' ? String(Math.round(value)) : value.toFixed(2);
+  return CONFIG.currency === 'ISK' ? String(Math.round(value)) : String(value.toFixed(2));
 }
 
 function normalizeImageUrl(value) {
@@ -515,7 +489,7 @@ function resetSummary() {
   els.totalProducts.textContent = '0';
   els.totalCategories.textContent = '0';
   els.averagePrice.textContent = '-';
-  els.dataSourceLabel.textContent = `Source: ${activeSourceName}`;
+  els.dataSourceLabel.textContent = 'Source: CSV';
 }
 
 function renderSummary() {
@@ -528,7 +502,7 @@ function renderSummary() {
   els.totalProducts.textContent = String(products.length);
   els.totalCategories.textContent = String(categories.size);
   els.averagePrice.textContent = average === null ? '-' : formatPrice(average);
-  els.dataSourceLabel.textContent = `Source: ${activeSourceName}`;
+  els.dataSourceLabel.textContent = csvDirty ? `Source: ${activeSourceName} (edited locally)` : `Source: ${activeSourceName}`;
 }
 
 function render() {
@@ -540,7 +514,7 @@ function render() {
   els.productGrid.append(fragment);
 
   els.resultCount.textContent = `${filtered.length} of ${products.length} products shown`;
-  els.emptyState.hidden = hasLoadedOnce && filtered.length > 0;
+  els.emptyState.hidden = filtered.length > 0;
   updateChipState();
 }
 
@@ -562,10 +536,6 @@ function getFilteredProducts() {
 
 function compareProducts(a, b, sortValue) {
   switch (sortValue) {
-    case 'source-code-asc':
-      return compareTextWithMissingLast(a.sourceCode, b.sourceCode, 'asc') || collator.compare(a.name, b.name);
-    case 'source-code-desc':
-      return compareTextWithMissingLast(a.sourceCode, b.sourceCode, 'desc') || collator.compare(a.name, b.name);
     case 'price-asc':
       return comparePrices(a, b, 'asc') || collator.compare(a.name, b.name);
     case 'price-desc':
@@ -575,24 +545,9 @@ function compareProducts(a, b, sortValue) {
     case 'category-asc':
       return collator.compare(a.category, b.category) || collator.compare(a.name, b.name);
     case 'name-asc':
-      return collator.compare(a.name, b.name);
     default:
-      return compareTextWithMissingLast(a.sourceCode, b.sourceCode, 'asc') || collator.compare(a.name, b.name);
+      return collator.compare(a.name, b.name);
   }
-}
-
-function compareTextWithMissingLast(aValue, bValue, direction = 'asc') {
-  const aText = String(aValue || '').trim();
-  const bText = String(bValue || '').trim();
-  const aMissing = aText === '';
-  const bMissing = bText === '';
-
-  if (aMissing && bMissing) return 0;
-  if (aMissing) return 1;
-  if (bMissing) return -1;
-
-  const result = collator.compare(aText, bText);
-  return direction === 'desc' ? -result : result;
 }
 
 function comparePrices(a, b, direction) {
@@ -610,7 +565,6 @@ function renderProductCard(product) {
   const barcode = fragment.querySelector('.product-card__barcode');
   const name = fragment.querySelector('.product-card__name');
   const brand = fragment.querySelector('.product-card__brand');
-  const sourceCode = fragment.querySelector('.product-card__source-code');
   const price = fragment.querySelector('.product-card__price');
   const weight = fragment.querySelector('.product-card__weight');
   const button = fragment.querySelector('.product-card__button');
@@ -627,7 +581,6 @@ function renderProductCard(product) {
   barcode.textContent = product.barcode ? `#${product.barcode}` : `Row ${product.rowNumber}`;
   name.textContent = product.name;
   brand.textContent = product.brand;
-  sourceCode.textContent = product.sourceCode ? `Source code: ${product.sourceCode}` : 'No source code';
   price.textContent = formatPriceLabel(product.price);
   price.classList.toggle('is-missing', !hasValidPrice(product));
   weight.textContent = product.weight || 'No weight';
@@ -664,7 +617,7 @@ function openProductFromHash() {
   if (!location.hash.startsWith('#/product/')) return;
   const rawKey = location.hash.replace('#/product/', '');
   const key = decodeURIComponent(rawKey).toLowerCase();
-  const product = productRouteMap.get(key) || productBarcodeMap.get(key);
+  const product = productRouteMap.get(key);
 
   if (product) {
     openProduct(product);
@@ -682,7 +635,7 @@ function openProduct(product) {
 
   const copyBarcodeButton = els.productDetails.querySelector('[data-action="copy-barcode"]');
   const copyLinkButton = els.productDetails.querySelector('[data-action="copy-link"]');
-  const priceForm = els.productDetails.querySelector('[data-action="price-form"]');
+  const priceForm = els.productDetails.querySelector('[data-price-form]');
 
   copyBarcodeButton?.addEventListener('click', async () => {
     await copyText(product.barcode || product.name, copyBarcodeButton, 'Copied barcode');
@@ -707,7 +660,7 @@ function renderProductDetails(product) {
   const productLink = `#/product/${encodeURIComponent(product.routeKey)}`;
   const ingredients = product.ingredients || 'No ingredients text in the data yet.';
   const fullCategory = product.categories || product.category || 'No category path';
-  const priceInputValue = Number.isFinite(product.price) && product.price > 0 ? String(product.price) : '';
+  const priceValue = Number.isFinite(product.price) && product.price > 0 ? product.price : '';
 
   return `
     <div>
@@ -717,24 +670,25 @@ function renderProductDetails(product) {
       <span class="badge">${escapeHtml(product.category || 'Uncategorized')}</span>
       <h2>${escapeHtml(product.name)}</h2>
       <p class="product-card__brand">${escapeHtml(product.brand)}</p>
-      <div class="detail-price ${hasValidPrice(product) ? '' : 'product-card__price is-missing'}" data-price-display>${escapeHtml(formatPriceLabel(product.price))}</div>
+      <div class="detail-price ${hasValidPrice(product) ? '' : 'product-card__price is-missing'}" data-current-price>
+        ${escapeHtml(formatPriceLabel(product.price))}
+      </div>
 
-      <form class="price-edit-form" data-action="price-form">
+      <form class="price-edit" data-price-form>
         <label>
-          <span>New price (${escapeHtml(CONFIG.currency || 'ISK')})</span>
-          <input data-price-input type="number" min="0" step="${CONFIG.currency === 'ISK' ? '1' : '0.01'}" inputmode="decimal" value="${escapeAttribute(priceInputValue)}" placeholder="Enter new price" />
+          <span>New price</span>
+          <input name="price" type="number" min="0" step="0.01" inputmode="decimal" value="${escapeAttribute(priceValue)}" placeholder="Enter new price" />
         </label>
-        <button class="button" type="submit">Save price</button>
-        <small data-price-status class="price-edit-status">Price update will be sent to n8n.</small>
+        <button class="button" type="submit">Update price locally</button>
+        <small data-price-status>Download the updated CSV to make the change permanent.</small>
       </form>
 
       <div class="detail-grid">
         ${detailItem('Weight', product.weight || 'No weight')}
         ${detailItem('Barcode / GTIN', product.barcode || 'No barcode')}
-        ${detailItem('Source code', product.sourceCode || 'No source code')}
         ${detailItem('Store category', product.category || 'Uncategorized')}
         ${detailItem('Status', product.status || 'No status')}
-        ${detailItem('Source row', String(product.rowNumber))}
+        ${detailItem('CSV row', String(product.rowNumber))}
         ${detailItem('Product link', productLink)}
       </div>
 
@@ -765,202 +719,146 @@ function detailItem(label, value) {
   `;
 }
 
-async function saveProductPrice(product, form) {
-  const input = form.querySelector('[data-price-input]');
+function saveProductPrice(product, form) {
+  const input = form.elements.price;
   const status = form.querySelector('[data-price-status]');
-  const button = form.querySelector('button[type="submit"]');
-  const newPrice = parsePrice(input.value);
+  const parsedPrice = parsePrice(input.value);
 
-  if (!Number.isFinite(newPrice) || newPrice < 0) {
+  if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
     status.textContent = 'Enter a valid price.';
-    status.className = 'price-edit-status price-edit-status--error';
+    status.className = 'price-status price-status--error';
     return;
   }
 
-  if (!CONFIG.priceUpdateSource) {
-    status.textContent = 'No price update endpoint is configured.';
-    status.className = 'price-edit-status price-edit-status--error';
-    return;
+  const formattedPrice = formatPriceForCsv(parsedPrice);
+  setField(product.sourceRow, CONFIG.priceField, ['price', 'regular_price'], formattedPrice);
+  product.price = parsedPrice;
+  product.priceRaw = formattedPrice;
+  product.searchText = [product.name, product.brand, product.barcode, product.barcodeAliases.join(' '), product.category, product.categories, product.ingredients, product.weight]
+    .join(' ')
+    .toLocaleLowerCase(CONFIG.locale || undefined);
+
+  csvDirty = true;
+  els.downloadCsv.disabled = false;
+  status.textContent = `Price updated locally to ${formatPriceLabel(product.price)}. Download the CSV and replace data/products.csv in GitHub to publish it.`;
+  status.className = 'price-status price-status--success';
+
+  const currentPrice = form.closest('.product-details__content')?.querySelector('[data-current-price]');
+  if (currentPrice) {
+    currentPrice.textContent = formatPriceLabel(product.price);
+    currentPrice.classList.toggle('is-missing', !hasValidPrice(product));
   }
 
-  const oldPrice = product.price;
-  const payload = buildPriceUpdatePayload(product, newPrice, oldPrice);
-
-  button.disabled = true;
-  status.textContent = 'Saving price to n8n...';
-  status.className = 'price-edit-status';
-
-  try {
-    const response = await fetch(CONFIG.priceUpdateSource, {
-      method: 'POST',
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json, text/plain;q=0.9, */*;q=0.8'
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const responseText = await response.text();
-    if (!response.ok) {
-      throw new Error(responseText || `HTTP ${response.status}`);
-    }
-
-    updateProductPriceInMemory(product, newPrice);
-    status.textContent = 'Price saved.';
-    status.className = 'price-edit-status price-edit-status--success';
-    updateOpenPriceDisplay(product);
-    renderSummary();
-    render();
-  } catch (error) {
-    status.textContent = `Price save failed: ${(error?.message || String(error)).slice(0, 180)}`;
-    status.className = 'price-edit-status price-edit-status--error';
-  } finally {
-    button.disabled = false;
-  }
-}
-
-function buildPriceUpdatePayload(product, newPrice, oldPrice) {
-  return {
-    action: 'update_price',
-    barcode: product.barcode,
-    barcode_aliases: product.barcodeAliases,
-    source_code: product.sourceCode,
-    row_number: product.rowNumber,
-    name: product.name,
-    brand: product.brand,
-    old_price: Number.isFinite(oldPrice) ? oldPrice : null,
-    new_price: newPrice,
-    formatted_new_price: formatPriceForData(newPrice),
-    currency: CONFIG.currency,
-    price_field: CONFIG.priceField,
-    source_row: product.sourceRow,
-    updated_at: new Date().toISOString()
-  };
-}
-
-function updateProductPriceInMemory(product, newPrice) {
-  const formatted = formatPriceForData(newPrice);
-  product.price = newPrice;
-  product.priceRaw = formatted;
-
-  const sourceRow = product.sourceRow || {};
-  const keys = [CONFIG.priceField, 'cost', 'price', 'regular_price'];
-  const existingKey = keys.find((key) => key && Object.prototype.hasOwnProperty.call(sourceRow, key));
-  sourceRow[existingKey || CONFIG.priceField || 'price'] = formatted;
-}
-
-function updateOpenPriceDisplay(product) {
-  const display = els.productDetails.querySelector('[data-price-display]');
-  const input = els.productDetails.querySelector('[data-price-input]');
-  if (display) {
-    display.textContent = formatPriceLabel(product.price);
-    display.classList.toggle('is-missing', !hasValidPrice(product));
-  }
-  if (input) input.value = Number.isFinite(product.price) ? String(product.price) : '';
+  renderSummary();
+  render();
 }
 
 async function lookupBarcodeAndOpen(rawBarcode, options = {}) {
   const parsed = parseBarcodeForProductLookup(rawBarcode);
-  const lookupValue = parsed.barcode || parsed.original_barcode || rawBarcode;
+  const displayBarcode = parsed.barcode || parsed.original_barcode || normalizeScannedText(rawBarcode);
 
-  if (!lookupValue) {
+  if (!displayBarcode) {
     updateScannerStatus('Enter or scan a barcode first.');
-    return null;
+    return;
   }
 
-  els.barcodeLookup.value = lookupValue;
-
-  if (!hasLoadedOnce || products.length === 0) {
-    updateScannerStatus('Loading products before barcode lookup...');
-    await loadProductsFromN8n();
+  if (products.length === 0) {
+    updateScannerStatus('No CSV products are loaded yet. Upload or load a CSV first.');
+    return;
   }
 
   const product = findProductByBarcode(parsed);
   if (!product) {
-    updateScannerStatus(`No product found for barcode ${lookupValue}.`);
-    els.searchInput.value = lookupValue;
-    render();
-    return null;
+    updateScannerStatus(`No product found for ${displayBarcode}.`);
+    return;
   }
 
+  els.barcodeLookup.value = displayBarcode;
   clearFiltersForBarcodeResult();
-  els.searchInput.value = product.barcode || lookupValue;
-  updateScannerStatus(`Found ${product.name}.`);
   navigateToProduct(product);
+  updateScannerStatus(`Found ${product.name}.`);
 
   if (options.fromScanner) {
     await stopBarcodeScanner();
   }
-
-  return product;
 }
 
 function findProductByBarcode(parsedOrValue) {
-  const aliases = parsedOrValue && typeof parsedOrValue === 'object'
-    ? buildBarcodeAliases([parsedOrValue.barcode, parsedOrValue.original_barcode, parsedOrValue.gs1_ai_01])
-    : buildBarcodeAliases(parsedOrValue);
+  const aliases = new Set();
+  if (typeof parsedOrValue === 'string') {
+    addBarcodeAliasVariants(parsedOrValue, aliases);
+  } else if (parsedOrValue && typeof parsedOrValue === 'object') {
+    addBarcodeAliasVariants(parsedOrValue.original_barcode, aliases);
+    addBarcodeAliasVariants(parsedOrValue.barcode, aliases);
+    if (parsedOrValue.gs1_ai_01) addBarcodeAliasVariants(parsedOrValue.gs1_ai_01, aliases);
+  }
 
   for (const alias of aliases) {
     const product = productBarcodeMap.get(alias.toLowerCase());
     if (product) return product;
   }
-
   return null;
 }
 
 function clearFiltersForBarcodeResult() {
+  els.searchInput.value = '';
   els.categoryFilter.value = 'all';
   els.brandFilter.value = 'all';
   applyDefaultSort();
+  render();
 }
 
 async function startBarcodeScanner() {
-  if (scannerRunning) return;
-
   if (!window.Html5Qrcode) {
-    updateScannerStatus('Camera scanner library did not load. Use manual barcode entry.');
+    updateScannerStatus('Camera scanner library did not load. Type the barcode manually instead.');
     return;
   }
 
-  els.scannerReader.hidden = false;
-  updateScannerStatus('Starting camera scanner...');
+  if (scannerRunning) return;
 
   try {
-    html5QrcodeScanner = new window.Html5Qrcode('scanner-reader');
-    const config = buildScannerConfig();
-
-    try {
-      await html5QrcodeScanner.start(
-        { facingMode: { exact: 'environment' } },
-        config,
-        handleScannerSuccess,
-        () => {}
-      );
-    } catch {
-      await html5QrcodeScanner.start(
-        { facingMode: 'environment' },
-        config,
-        handleScannerSuccess,
-        () => {}
-      );
-    }
-
-    scannerRunning = true;
+    els.scannerReader.hidden = false;
     els.startScanner.disabled = true;
     els.stopScanner.disabled = false;
-    updateScannerStatus('Scanning for EAN, UPC, GS1 DataMatrix, or GS1-128 barcode...');
+    updateScannerStatus('Starting camera...');
+
+    html5QrcodeScanner = new window.Html5Qrcode('scanner-reader', false);
+    const cameras = await window.Html5Qrcode.getCameras();
+    if (!cameras.length) {
+      throw new Error('No camera found.');
+    }
+
+    const backCamera = cameras.find((camera) => /back|rear|environment/i.test(camera.label));
+    const cameraId = backCamera?.id || cameras[0].id;
+
+    await html5QrcodeScanner.start(
+      cameraId,
+      buildScannerConfig(),
+      handleScannerSuccess,
+      () => {}
+    );
+
+    scannerRunning = true;
+    updateScannerStatus('Scanning... point the camera at a barcode.');
   } catch (error) {
     scannerRunning = false;
     els.scannerReader.hidden = true;
     els.startScanner.disabled = false;
     els.stopScanner.disabled = true;
-    updateScannerStatus(`Could not start scanner: ${error?.message || error}`);
+    updateScannerStatus(`Could not start scanner: ${error.message || error}`);
+
+    try {
+      if (html5QrcodeScanner) await html5QrcodeScanner.clear();
+    } catch {
+      // Ignore scanner cleanup failures.
+    }
+    html5QrcodeScanner = null;
   }
 }
 
 async function stopBarcodeScanner() {
-  if (!html5QrcodeScanner || !scannerRunning) {
+  if (!html5QrcodeScanner) {
+    scannerRunning = false;
     els.scannerReader.hidden = true;
     els.startScanner.disabled = false;
     els.stopScanner.disabled = true;
@@ -968,7 +866,7 @@ async function stopBarcodeScanner() {
   }
 
   try {
-    await html5QrcodeScanner.stop();
+    if (scannerRunning) await html5QrcodeScanner.stop();
     await html5QrcodeScanner.clear();
   } catch {
     // Ignore cleanup failures from browsers that already stopped the stream.
@@ -1229,9 +1127,9 @@ function clearFilters() {
 }
 
 function applyDefaultSort() {
-  const defaultSort = CONFIG.defaultSort || 'source-code-asc';
+  const defaultSort = CONFIG.defaultSort || 'name-asc';
   const hasOption = [...els.sortSelect.options].some((option) => option.value === defaultSort);
-  els.sortSelect.value = hasOption ? defaultSort : 'source-code-asc';
+  els.sortSelect.value = hasOption ? defaultSort : 'name-asc';
 }
 
 function hasValidPrice(product) {
@@ -1260,18 +1158,36 @@ async function copyText(text, button, successLabel) {
   }
 }
 
-function setLoadingState(isLoading, message) {
-  els.loadProducts.disabled = isLoading;
-  els.refreshData.disabled = isLoading;
-  els.loadStatus.textContent = message;
+function downloadCurrentCsv() {
+  if (!currentRows.length) return;
+  const csv = serializeCsv(currentHeaders, currentRows);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  link.href = url;
+  link.download = `products-updated-${date}.csv`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
-function buildFriendlyError(error) {
-  const message = error?.message || String(error);
-  if (message.toLowerCase().includes('failed to fetch')) {
-    return 'Could not fetch the n8n webhook. If config.js points directly to n8n, add CORS headers in the n8n Respond to Webhook node. Or keep dataSource as /api/products and set N8N_PRODUCTS_WEBHOOK_URL in Netlify.';
+function serializeCsv(headers, rows) {
+  const cleanHeaders = normalizeHeaders(headers.length ? headers : collectHeaders(rows));
+  const lines = [cleanHeaders.map(csvEscape).join(',')];
+  rows.forEach((row) => {
+    lines.push(cleanHeaders.map((header) => csvEscape(getField(row, [header]))).join(','));
+  });
+  return `${lines.join('\r\n')}\r\n`;
+}
+
+function csvEscape(value) {
+  const text = String(value ?? '');
+  if (/[",\r\n]/.test(text)) {
+    return `"${text.replaceAll('"', '""')}"`;
   }
-  return `Could not load product data: ${message}`;
+  return text;
 }
 
 function showError(message) {
@@ -1283,6 +1199,7 @@ function showError(message) {
   els.productGrid.replaceChildren();
   els.resultCount.textContent = 'Could not load products';
   els.emptyState.hidden = true;
+  els.downloadCsv.disabled = true;
   const error = document.createElement('div');
   error.className = 'error-box';
   error.textContent = message;
