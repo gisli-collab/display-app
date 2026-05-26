@@ -1,8 +1,12 @@
-[build]
-  publish = "."
-  functions = "netlify/functions"
+[functions]
+  directory = "netlify/functions"
 
 [[redirects]]
   from = "/api/products"
   to = "/.netlify/functions/products"
+  status = 200
+
+[[redirects]]
+  from = "/api/update-price"
+  to = "/.netlify/functions/update-price"
   status = 200
