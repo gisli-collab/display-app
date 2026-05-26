@@ -1,0 +1,16 @@
+{
+  "name": "store-display-app",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Netlify product display app that can read CSV/JSON product data and receive updates from n8n.",
+  "scripts": {
+    "dev": "netlify dev",
+    "check": "node --check app.js && node --check netlify/functions/products.js"
+  },
+  "dependencies": {
+    "@netlify/blobs": "latest"
+  },
+  "devDependencies": {
+    "netlify-cli": "latest"
+  }
+}
