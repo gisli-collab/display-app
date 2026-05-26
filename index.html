@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Product display app for grocery product data." />
+    <meta name="description" content="Live product display app for n8n product data with barcode lookup and price editing." />
     <title>Store Product Display</title>
     <link rel="icon" href="assets/placeholder.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
@@ -11,11 +11,15 @@
   <body>
     <header class="hero">
       <div class="hero__content">
-        <p class="eyebrow">Product display app</p>
+        <p class="eyebrow">Live n8n product display</p>
         <h1 id="store-name">Store Product Display</h1>
         <p class="hero__text">
-          Browse product results from the latest n8n upload, with the included CSV file as a fallback.
+          Products are loaded from your n8n workflow. Product data is not stored in this GitHub repo.
         </p>
+        <div class="hero__actions">
+          <button id="load-products" type="button" class="button">Load products from n8n</button>
+          <span id="load-status" class="load-status" role="status" aria-live="polite">Waiting for load.</span>
+        </div>
       </div>
       <div class="hero__panel" aria-label="Product summary">
         <div>
@@ -27,13 +31,42 @@
           <span class="metric-label">categories</span>
         </div>
         <div>
-          <span id="average-price" class="metric">—</span>
+          <span id="average-price" class="metric">-</span>
           <span class="metric-label">average price</span>
         </div>
       </div>
     </header>
 
     <main class="page-shell">
+      <section class="scanner-panel" aria-label="Barcode lookup">
+        <div class="scanner-panel__header">
+          <div>
+            <p class="eyebrow eyebrow--dark">Barcode lookup</p>
+            <h2>Scan or enter a barcode</h2>
+            <p>
+              If the barcode exists in the n8n product data, the app opens that product so you can edit its price.
+            </p>
+          </div>
+          <div class="scanner-panel__actions">
+            <button id="start-scanner" type="button" class="button">Start camera scan</button>
+            <button id="stop-scanner" type="button" class="button button--secondary" disabled>Stop scan</button>
+          </div>
+        </div>
+
+        <div class="scanner-lookup-row">
+          <label class="barcode-box">
+            <span>Barcode / GTIN</span>
+            <input id="barcode-lookup" type="text" inputmode="numeric" autocomplete="off" placeholder="Scan or type EAN / GTIN" />
+          </label>
+          <button id="lookup-barcode" type="button" class="button">Open product</button>
+        </div>
+
+        <div id="scanner-reader" class="scanner-reader" hidden></div>
+        <small id="scanner-status" class="scanner-status" role="status" aria-live="polite">
+          Load products, then scan or enter a barcode.
+        </small>
+      </section>
+
       <section class="toolbar" aria-label="Product filters">
         <label class="search-box">
           <span>Search products</span>
@@ -57,48 +90,37 @@
         <label>
           <span>Sort</span>
           <select id="sort-select">
-            <option value="source-row-asc" selected>Source row ascending</option>
-            <option value="source-row-desc">Source row descending</option>
-            <option value="name-asc">Name A–Z</option>
+            <option value="source-code-asc" selected>Source code A-Z</option>
+            <option value="source-code-desc">Source code Z-A</option>
+            <option value="name-asc">Name A-Z</option>
             <option value="price-asc">Price low to high</option>
             <option value="price-desc">Price high to low</option>
-            <option value="brand-asc">Brand A–Z</option>
-            <option value="category-asc">Category A–Z</option>
+            <option value="brand-asc">Brand A-Z</option>
+            <option value="category-asc">Category A-Z</option>
           </select>
         </label>
 
-        <button id="refresh-data" type="button" class="button button--secondary">Refresh data</button>
+        <button id="refresh-data" type="button" class="button button--secondary">Refresh</button>
         <button id="clear-filters" type="button" class="button button--secondary">Clear filters</button>
       </section>
 
       <section class="status-line" aria-live="polite">
-        <span id="result-count">Loading products…</span>
-        <span id="data-source-label">Source: CSV</span>
+        <span id="result-count">Click "Load products from n8n".</span>
+        <span id="data-source-label">Source: n8n</span>
       </section>
 
       <section id="category-chips" class="chip-row" aria-label="Quick category filters"></section>
 
       <section id="product-grid" class="product-grid" aria-label="Products"></section>
 
-      <section id="empty-state" class="empty-state" hidden>
-        <h2>No products found</h2>
-        <p>Try changing the search, category, brand, or sort settings.</p>
-      </section>
-
-      <section class="import-helper">
-        <div>
-          <h2>Local CSV preview</h2>
-          <p>Use this only for quick testing. On Netlify, replace <code>data/products.csv</code> or update <code>config.js</code>.</p>
-        </div>
-        <label class="file-loader">
-          <span>Preview another CSV file</span>
-          <input id="csv-file-input" type="file" accept=".csv,text/csv" />
-        </label>
+      <section id="empty-state" class="empty-state">
+        <h2>No products loaded yet</h2>
+        <p>Click <strong>Load products from n8n</strong> to trigger the webhook and display the latest rows.</p>
       </section>
     </main>
 
     <dialog id="product-dialog" class="product-dialog">
-      <button id="dialog-close" type="button" class="dialog-close" aria-label="Close product details">×</button>
+      <button id="dialog-close" type="button" class="dialog-close" aria-label="Close product details">x</button>
       <article id="product-details" class="product-details"></article>
     </dialog>
 
@@ -114,6 +136,7 @@
           </div>
           <h2 class="product-card__name"></h2>
           <p class="product-card__brand"></p>
+          <div class="product-card__source-code"></div>
           <div class="product-card__meta">
             <strong class="product-card__price"></strong>
             <span class="product-card__weight"></span>
@@ -123,6 +146,7 @@
       </article>
     </template>
 
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="config.js"></script>
     <script src="app.js" type="module"></script>
   </body>
