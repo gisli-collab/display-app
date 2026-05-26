@@ -518,3 +518,150 @@ select:focus {
     grid-template-columns: 1fr;
   }
 }
+
+
+.hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 1.3rem;
+}
+
+.load-status {
+  color: #d1fae5;
+  font-weight: 800;
+}
+
+.product-card__source-code {
+  margin: -0.35rem 0 0.85rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+/* Barcode scanner and price editing */
+.toolbar {
+  margin-top: 1rem;
+}
+
+.eyebrow--dark {
+  color: var(--brand-dark);
+}
+
+.scanner-panel {
+  display: grid;
+  gap: 1rem;
+  margin-top: -2.7rem;
+  padding: 1rem;
+  border: 1px solid rgba(217, 226, 239, 0.9);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.scanner-panel__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.scanner-panel h2 {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.35rem, 2.6vw, 2rem);
+  letter-spacing: -0.035em;
+}
+
+.scanner-panel p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.scanner-panel__actions,
+.scanner-lookup-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  align-items: end;
+}
+
+.barcode-box {
+  display: grid;
+  flex: 1 1 320px;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.scanner-reader {
+  width: min(680px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: #0f172a;
+}
+
+.scanner-status {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.price-edit-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin: 0.9rem 0 1rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-soft);
+}
+
+.price-edit-form label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.price-edit-status {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.price-edit-status--success {
+  color: #047857;
+}
+
+.price-edit-status--error {
+  color: #b91c1c;
+}
+
+@media (max-width: 740px) {
+  .scanner-panel {
+    margin-top: -1.2rem;
+  }
+
+  .scanner-panel__header,
+  .scanner-panel__actions,
+  .scanner-lookup-row,
+  .price-edit-form {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
