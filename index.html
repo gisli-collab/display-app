@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Live product display app for n8n product data with barcode lookup and price editing." />
+    <meta name="description" content="Manual CSV product display app with barcode lookup and local price editing." />
     <title>Store Product Display</title>
     <link rel="icon" href="assets/placeholder.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
@@ -11,15 +11,11 @@
   <body>
     <header class="hero">
       <div class="hero__content">
-        <p class="eyebrow">Live n8n product display</p>
+        <p class="eyebrow">Manual CSV product display</p>
         <h1 id="store-name">Store Product Display</h1>
         <p class="hero__text">
-          Products are loaded from your n8n workflow. Product data is not stored in this GitHub repo.
+          Browse products from <code>data/products.csv</code>, upload another CSV for preview, scan a barcode, and edit prices locally before downloading an updated CSV.
         </p>
-        <div class="hero__actions">
-          <button id="load-products" type="button" class="button">Load products from n8n</button>
-          <span id="load-status" class="load-status" role="status" aria-live="polite">Waiting for load.</span>
-        </div>
       </div>
       <div class="hero__panel" aria-label="Product summary">
         <div>
@@ -43,9 +39,7 @@
           <div>
             <p class="eyebrow eyebrow--dark">Barcode lookup</p>
             <h2>Scan or enter a barcode</h2>
-            <p>
-              If the barcode exists in the n8n product data, the app opens that product so you can edit its price.
-            </p>
+            <p>If the barcode exists in the loaded CSV, the app opens that product so you can update the price.</p>
           </div>
           <div class="scanner-panel__actions">
             <button id="start-scanner" type="button" class="button">Start camera scan</button>
@@ -62,15 +56,13 @@
         </div>
 
         <div id="scanner-reader" class="scanner-reader" hidden></div>
-        <small id="scanner-status" class="scanner-status" role="status" aria-live="polite">
-          Load products, then scan or enter a barcode.
-        </small>
+        <small id="scanner-status" class="scanner-status" role="status" aria-live="polite">Load a CSV, then scan or enter a barcode.</small>
       </section>
 
       <section class="toolbar" aria-label="Product filters">
         <label class="search-box">
           <span>Search products</span>
-          <input id="search-input" type="search" autocomplete="off" placeholder="Search by name, brand, barcode, source code, ingredients..." />
+          <input id="search-input" type="search" autocomplete="off" placeholder="Search by name, brand, barcode, ingredients..." />
         </label>
 
         <label>
@@ -90,9 +82,7 @@
         <label>
           <span>Sort</span>
           <select id="sort-select">
-            <option value="source-code-asc" selected>Source code A-Z</option>
-            <option value="source-code-desc">Source code Z-A</option>
-            <option value="name-asc">Name A-Z</option>
+            <option value="name-asc" selected>Name A-Z</option>
             <option value="price-asc">Price low to high</option>
             <option value="price-desc">Price high to low</option>
             <option value="brand-asc">Brand A-Z</option>
@@ -100,22 +90,38 @@
           </select>
         </label>
 
-        <button id="refresh-data" type="button" class="button button--secondary">Refresh</button>
         <button id="clear-filters" type="button" class="button button--secondary">Clear filters</button>
       </section>
 
       <section class="status-line" aria-live="polite">
-        <span id="result-count">Click "Load products from n8n".</span>
-        <span id="data-source-label">Source: n8n</span>
+        <span id="result-count">Loading products...</span>
+        <span id="data-source-label">Source: CSV</span>
       </section>
 
       <section id="category-chips" class="chip-row" aria-label="Quick category filters"></section>
 
       <section id="product-grid" class="product-grid" aria-label="Products"></section>
 
-      <section id="empty-state" class="empty-state">
-        <h2>No products loaded yet</h2>
-        <p>Click <strong>Load products from n8n</strong> to trigger the webhook and display the latest rows.</p>
+      <section id="empty-state" class="empty-state" hidden>
+        <h2>No products found</h2>
+        <p>Try changing the search, category, brand, or sort settings.</p>
+      </section>
+
+      <section class="import-helper">
+        <div>
+          <h2>Manual CSV upload</h2>
+          <p>
+            Replace <code>data/products.csv</code> in GitHub for the public Netlify version, or preview another CSV file here in your browser.
+            Price edits are local until you download the updated CSV and replace the file in GitHub.
+          </p>
+        </div>
+        <div class="import-actions">
+          <label class="file-loader">
+            <span>Preview another CSV file</span>
+            <input id="csv-file-input" type="file" accept=".csv,text/csv" />
+          </label>
+          <button id="download-csv" type="button" class="button button--secondary" disabled>Download updated CSV</button>
+        </div>
       </section>
     </main>
 
@@ -136,7 +142,6 @@
           </div>
           <h2 class="product-card__name"></h2>
           <p class="product-card__brand"></p>
-          <div class="product-card__source-code"></div>
           <div class="product-card__meta">
             <strong class="product-card__price"></strong>
             <span class="product-card__weight"></span>
