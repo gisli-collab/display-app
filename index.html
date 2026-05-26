@@ -14,7 +14,7 @@
         <p class="eyebrow">Product display app</p>
         <h1 id="store-name">Store Product Display</h1>
         <p class="hero__text">
-          Browse product results from the CSV export now. Later this same app can read data from n8n or another API endpoint.
+          Browse product results from the latest n8n upload, with the included CSV file as a fallback.
         </p>
       </div>
       <div class="hero__panel" aria-label="Product summary">
@@ -37,7 +37,7 @@
       <section class="toolbar" aria-label="Product filters">
         <label class="search-box">
           <span>Search products</span>
-          <input id="search-input" type="search" autocomplete="off" placeholder="Search by name, brand, barcode, ingredients..." />
+          <input id="search-input" type="search" autocomplete="off" placeholder="Search by name, brand, barcode, source code, ingredients..." />
         </label>
 
         <label>
@@ -57,6 +57,8 @@
         <label>
           <span>Sort</span>
           <select id="sort-select">
+            <option value="source-code-asc" selected>Source code A–Z</option>
+            <option value="source-code-desc">Source code Z–A</option>
             <option value="name-asc">Name A–Z</option>
             <option value="price-asc">Price low to high</option>
             <option value="price-desc">Price high to low</option>
@@ -65,6 +67,7 @@
           </select>
         </label>
 
+        <button id="refresh-data" type="button" class="button button--secondary">Refresh data</button>
         <button id="clear-filters" type="button" class="button button--secondary">Clear filters</button>
       </section>
 
