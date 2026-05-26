@@ -8,7 +8,7 @@ const DEFAULT_CONFIG = {
   imageField: 'img',
   barcodeField: 'barcodex',
   sourceCodeField: 'source_code',
-  defaultSort: 'source-code-asc'
+  defaultSort: 'source-row-asc'
 };
 
 const CONFIG = {
@@ -394,10 +394,12 @@ function getFilteredProducts() {
 
 function compareProducts(a, b, sortValue) {
   switch (sortValue) {
+    case 'source-row-asc':
     case 'source-code-asc':
-      return compareTextWithMissingLast(a.sourceCode, b.sourceCode, 'asc') || collator.compare(a.name, b.name);
+      return compareRows(a, b, 'asc') || collator.compare(a.name, b.name);
+    case 'source-row-desc':
     case 'source-code-desc':
-      return compareTextWithMissingLast(a.sourceCode, b.sourceCode, 'desc') || collator.compare(a.name, b.name);
+      return compareRows(a, b, 'desc') || collator.compare(a.name, b.name);
     case 'price-asc':
       return comparePrices(a, b, 'asc') || collator.compare(a.name, b.name);
     case 'price-desc':
@@ -409,8 +411,14 @@ function compareProducts(a, b, sortValue) {
     case 'name-asc':
       return collator.compare(a.name, b.name);
     default:
-      return compareTextWithMissingLast(a.sourceCode, b.sourceCode, 'asc') || collator.compare(a.name, b.name);
+      return compareRows(a, b, 'asc') || collator.compare(a.name, b.name);
   }
+}
+
+function compareRows(a, b, direction = 'asc') {
+  const aRow = Number.isFinite(a.rowNumber) ? a.rowNumber : Number.POSITIVE_INFINITY;
+  const bRow = Number.isFinite(b.rowNumber) ? b.rowNumber : Number.POSITIVE_INFINITY;
+  return direction === 'desc' ? bRow - aRow : aRow - bRow;
 }
 
 function compareTextWithMissingLast(aValue, bValue, direction = 'asc') {
@@ -588,9 +596,12 @@ function clearFilters() {
 }
 
 function applyDefaultSort() {
-  const defaultSort = CONFIG.defaultSort || 'source-code-asc';
+  const defaultSort = CONFIG.defaultSort || 'source-row-asc';
+  const fallbackSort = [...els.sortSelect.options].some((option) => option.value === 'source-row-asc')
+    ? 'source-row-asc'
+    : 'source-code-asc';
   const hasOption = [...els.sortSelect.options].some((option) => option.value === defaultSort);
-  els.sortSelect.value = hasOption ? defaultSort : 'source-code-asc';
+  els.sortSelect.value = hasOption ? defaultSort : fallbackSort;
 }
 
 function hasValidPrice(product) {
