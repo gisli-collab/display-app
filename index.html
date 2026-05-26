@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Product display app for grocery product data." />
+    <title>Store Product Display</title>
+    <link rel="icon" href="assets/placeholder.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero__content">
+        <p class="eyebrow">Product display app</p>
+        <h1 id="store-name">Store Product Display</h1>
+        <p class="hero__text">
+          Browse product results from the CSV export now. Later this same app can read data from n8n or another API endpoint.
+        </p>
+      </div>
+      <div class="hero__panel" aria-label="Product summary">
+        <div>
+          <span id="total-products" class="metric">0</span>
+          <span class="metric-label">products</span>
+        </div>
+        <div>
+          <span id="total-categories" class="metric">0</span>
+          <span class="metric-label">categories</span>
+        </div>
+        <div>
+          <span id="average-price" class="metric">—</span>
+          <span class="metric-label">average price</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <section class="toolbar" aria-label="Product filters">
+        <label class="search-box">
+          <span>Search products</span>
+          <input id="search-input" type="search" autocomplete="off" placeholder="Search by name, brand, barcode, ingredients..." />
+        </label>
+
+        <label>
+          <span>Category</span>
+          <select id="category-filter">
+            <option value="all">All categories</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Brand</span>
+          <select id="brand-filter">
+            <option value="all">All brands</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Sort</span>
+          <select id="sort-select">
+            <option value="name-asc">Name A–Z</option>
+            <option value="price-asc">Price low to high</option>
+            <option value="price-desc">Price high to low</option>
+            <option value="brand-asc">Brand A–Z</option>
+            <option value="category-asc">Category A–Z</option>
+          </select>
+        </label>
+
+        <button id="clear-filters" type="button" class="button button--secondary">Clear filters</button>
+      </section>
+
+      <section class="status-line" aria-live="polite">
+        <span id="result-count">Loading products…</span>
+        <span id="data-source-label">Source: CSV</span>
+      </section>
+
+      <section id="category-chips" class="chip-row" aria-label="Quick category filters"></section>
+
+      <section id="product-grid" class="product-grid" aria-label="Products"></section>
+
+      <section id="empty-state" class="empty-state" hidden>
+        <h2>No products found</h2>
+        <p>Try changing the search, category, brand, or sort settings.</p>
+      </section>
+
+      <section class="import-helper">
+        <div>
+          <h2>Local CSV preview</h2>
+          <p>Use this only for quick testing. On Netlify, replace <code>data/products.csv</code> or update <code>config.js</code>.</p>
+        </div>
+        <label class="file-loader">
+          <span>Preview another CSV file</span>
+          <input id="csv-file-input" type="file" accept=".csv,text/csv" />
+        </label>
+      </section>
+    </main>
+
+    <dialog id="product-dialog" class="product-dialog">
+      <button id="dialog-close" type="button" class="dialog-close" aria-label="Close product details">×</button>
+      <article id="product-details" class="product-details"></article>
+    </dialog>
+
+    <template id="product-card-template">
+      <article class="product-card">
+        <a class="product-card__image-link" href="#">
+          <img class="product-card__image" src="" alt="" loading="lazy" />
+        </a>
+        <div class="product-card__body">
+          <div class="product-card__topline">
+            <span class="badge product-card__category"></span>
+            <span class="product-card__barcode"></span>
+          </div>
+          <h2 class="product-card__name"></h2>
+          <p class="product-card__brand"></p>
+          <div class="product-card__meta">
+            <strong class="product-card__price"></strong>
+            <span class="product-card__weight"></span>
+          </div>
+          <button type="button" class="button product-card__button">Open product</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="config.js"></script>
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
