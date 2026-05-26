@@ -1,11 +1,14 @@
 const DEFAULT_CONFIG = {
   storeName: 'Store Product Display',
-  dataSource: './data/products.csv',
+  dataSource: './api/products',
+  fallbackDataSource: './data/products.csv',
   currency: 'ISK',
   locale: 'is-IS',
   priceField: 'cost',
   imageField: 'img',
-  barcodeField: 'barcodex'
+  barcodeField: 'barcodex',
+  sourceCodeField: 'source_code',
+  defaultSort: 'source-code-asc'
 };
 
 const CONFIG = {
@@ -19,6 +22,7 @@ const els = {
   totalCategories: document.querySelector('#total-categories'),
   averagePrice: document.querySelector('#average-price'),
   searchInput: document.querySelector('#search-input'),
+  refreshData: document.querySelector('#refresh-data'),
   categoryFilter: document.querySelector('#category-filter'),
   brandFilter: document.querySelector('#brand-filter'),
   sortSelect: document.querySelector('#sort-select'),
@@ -54,6 +58,7 @@ init();
 
 async function init() {
   els.storeName.textContent = CONFIG.storeName;
+  applyDefaultSort();
   bindEvents();
   await loadInitialData();
 }
@@ -64,6 +69,7 @@ function bindEvents() {
   els.brandFilter.addEventListener('change', render);
   els.sortSelect.addEventListener('change', render);
   els.clearFilters.addEventListener('click', clearFilters);
+  els.refreshData?.addEventListener('click', loadInitialData);
 
   els.fileInput.addEventListener('change', async (event) => {
     const file = event.target.files?.[0];
@@ -93,27 +99,41 @@ function bindEvents() {
 }
 
 async function loadInitialData() {
-  try {
-    const response = await fetch(CONFIG.dataSource, { cache: 'no-store' });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} while loading ${CONFIG.dataSource}`);
-    }
+  const sources = [CONFIG.dataSource, CONFIG.fallbackDataSource].filter(Boolean);
+  const errors = [];
 
-    const text = await response.text();
-    const contentType = response.headers.get('content-type') || '';
-    const isJson = contentType.includes('json') || CONFIG.dataSource.toLowerCase().includes('.json');
-    const rows = isJson ? normalizeJsonPayload(JSON.parse(text)) : parseCsv(text);
-    setProducts(rows, CONFIG.dataSource);
-  } catch (error) {
-    showError(`Could not load product data. ${error.message}`);
+  for (const source of sources) {
+    try {
+      const rows = await loadProductsFromSource(source);
+      setProducts(rows, source);
+      return;
+    } catch (error) {
+      errors.push(`${source}: ${error.message}`);
+    }
   }
+
+  showError(`Could not load product data. ${errors.join(' | ')}`);
+}
+
+async function loadProductsFromSource(source) {
+  const response = await fetch(source, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const text = await response.text();
+  const contentType = response.headers.get('content-type') || '';
+  const isJson = contentType.includes('json') || source.toLowerCase().includes('.json');
+  return isJson ? normalizeJsonPayload(JSON.parse(text)) : parseCsv(text);
 }
 
 function normalizeJsonPayload(payload) {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload.products)) return payload.products;
   if (Array.isArray(payload.data)) return payload.data;
-  throw new Error('JSON must be an array, or an object with a products/data array.');
+  if (Array.isArray(payload.rows)) return payload.rows;
+  if (Array.isArray(payload.items)) return payload.items;
+  throw new Error('JSON must be an array, or an object with a products/data/rows/items array.');
 }
 
 function setProducts(rows, sourceName) {
@@ -191,6 +211,7 @@ function normalizeProduct(row, index) {
   const name = getField(row, ['name', 'product_name', 'title']);
   const brand = getField(row, ['brand', 'manufacturer']) || 'No brand';
   const barcode = getField(row, [CONFIG.barcodeField, 'barcode', 'gtin', 'ean', 'sku']);
+  const sourceCode = getSourceCode(row);
   const costRaw = getField(row, [CONFIG.priceField, 'price', 'regular_price']);
   const price = parsePrice(costRaw);
   const category = getField(row, ['store_categories', 'store_category', 'category']) || 'Uncategorized';
@@ -210,6 +231,7 @@ function normalizeProduct(row, index) {
     name: name.trim(),
     brand: brand.trim(),
     barcode: barcode.trim(),
+    sourceCode: sourceCode.trim(),
     price,
     priceRaw: costRaw.trim(),
     category: category.trim(),
@@ -218,10 +240,30 @@ function normalizeProduct(row, index) {
     weight: weight.trim(),
     status: status.trim(),
     imageUrl,
-    searchText: [name, brand, barcode, category, categories, ingredients, weight]
+    searchText: [name, brand, barcode, sourceCode, category, categories, ingredients, weight]
       .join(' ')
       .toLocaleLowerCase(CONFIG.locale || undefined)
   };
+}
+
+function getSourceCode(row) {
+  const direct = getField(row, [
+    CONFIG.sourceCodeField,
+    'source_code',
+    'source code',
+    'sourceCode',
+    'source',
+    'store_source_code',
+    'inventory_source_code'
+  ]);
+  if (direct) return direct;
+
+  const sourceLikeKey = Object.keys(row).find((key) => normalizeKey(key).includes('sourcecode'));
+  return sourceLikeKey ? String(row[sourceLikeKey] || '') : '';
+}
+
+function normalizeKey(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
 function getField(row, keys) {
@@ -352,6 +394,10 @@ function getFilteredProducts() {
 
 function compareProducts(a, b, sortValue) {
   switch (sortValue) {
+    case 'source-code-asc':
+      return compareTextWithMissingLast(a.sourceCode, b.sourceCode, 'asc') || collator.compare(a.name, b.name);
+    case 'source-code-desc':
+      return compareTextWithMissingLast(a.sourceCode, b.sourceCode, 'desc') || collator.compare(a.name, b.name);
     case 'price-asc':
       return comparePrices(a, b, 'asc') || collator.compare(a.name, b.name);
     case 'price-desc':
@@ -361,9 +407,24 @@ function compareProducts(a, b, sortValue) {
     case 'category-asc':
       return collator.compare(a.category, b.category) || collator.compare(a.name, b.name);
     case 'name-asc':
-    default:
       return collator.compare(a.name, b.name);
+    default:
+      return compareTextWithMissingLast(a.sourceCode, b.sourceCode, 'asc') || collator.compare(a.name, b.name);
   }
+}
+
+function compareTextWithMissingLast(aValue, bValue, direction = 'asc') {
+  const aText = String(aValue || '').trim();
+  const bText = String(bValue || '').trim();
+  const aMissing = aText === '';
+  const bMissing = bText === '';
+
+  if (aMissing && bMissing) return 0;
+  if (aMissing) return 1;
+  if (bMissing) return -1;
+
+  const result = collator.compare(aText, bText);
+  return direction === 'desc' ? -result : result;
 }
 
 function comparePrices(a, b, direction) {
@@ -484,6 +545,7 @@ function renderProductDetails(product) {
       <div class="detail-grid">
         ${detailItem('Weight', product.weight || 'No weight')}
         ${detailItem('Barcode / GTIN', product.barcode || 'No barcode')}
+        ${detailItem('Source code', product.sourceCode || 'No source code')}
         ${detailItem('Store category', product.category || 'Uncategorized')}
         ${detailItem('Status', product.status || 'No status')}
         ${detailItem('Source row', String(product.rowNumber))}
@@ -521,8 +583,14 @@ function clearFilters() {
   els.searchInput.value = '';
   els.categoryFilter.value = 'all';
   els.brandFilter.value = 'all';
-  els.sortSelect.value = 'name-asc';
+  applyDefaultSort();
   render();
+}
+
+function applyDefaultSort() {
+  const defaultSort = CONFIG.defaultSort || 'source-code-asc';
+  const hasOption = [...els.sortSelect.options].some((option) => option.value === defaultSort);
+  els.sortSelect.value = hasOption ? defaultSort : 'source-code-asc';
 }
 
 function hasValidPrice(product) {
