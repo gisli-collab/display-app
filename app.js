@@ -1,5 +1,5 @@
 const DEFAULT_CONFIG = {
-  storeName: 'display-app V1.2',
+  storeName: 'display-app.v1.3',
   dataSource: '',
   currency: 'ISK',
   locale: 'is-IS',
@@ -7,6 +7,9 @@ const DEFAULT_CONFIG = {
   imageField: 'img',
   barcodeField: 'barcodex',
   shelfCodeField: 'shelfcode',
+  statusField: 'status',
+  activeStatusValue: '1',
+  inactiveStatusValue: '2',
   storeMapImage: 'store-map.png',
   defaultSort: 'name-asc'
 };
@@ -317,7 +320,7 @@ function cleanHeader(value) {
 
 function normalizeHeaders(headers) {
   const cleaned = uniqueStrings(headers.map(cleanHeader));
-  const required = [CONFIG.priceField, CONFIG.barcodeField, CONFIG.imageField, CONFIG.shelfCodeField, 'name', 'weight', 'brand'];
+  const required = [CONFIG.priceField, CONFIG.barcodeField, CONFIG.imageField, CONFIG.shelfCodeField, CONFIG.statusField, 'name', 'weight', 'brand'];
   required.forEach((header) => {
     if (header && !cleaned.some((existing) => existing.toLowerCase() === String(header).toLowerCase())) {
       cleaned.push(header);
@@ -351,7 +354,11 @@ function normalizeProduct(row, index) {
   const categories = getField(sourceRow, ['categories', 'category_path']);
   const ingredients = getField(sourceRow, ['ingredients', 'description']);
   const weight = getField(sourceRow, ['weight', 'package_weight', 'size']);
-  const status = getField(sourceRow, ['status']);
+  const rawStatus = getField(sourceRow, [CONFIG.statusField, 'status']);
+  const status = normalizeStatusCode(rawStatus);
+  if (!rawStatus.trim()) {
+    setField(sourceRow, CONFIG.statusField, ['status'], status);
+  }
   const shelfCode = normalizeShelfCode(getField(sourceRow, [CONFIG.shelfCodeField, 'shelf_code', 'shelf', 'shelf_location', 'store_location', 'location']));
   const imageUrl = normalizeImageUrl(getField(sourceRow, [CONFIG.imageField, 'image', 'image_url', 'img_url']));
   const idBase = barcode || `${name}-${index + 1}`;
@@ -376,7 +383,7 @@ function normalizeProduct(row, index) {
     status: status.trim(),
     shelfCode,
     imageUrl,
-    searchText: [name, brand, barcode, barcodeAliases.join(' '), category, categories, ingredients, weight, shelfCode]
+    searchText: [name, brand, barcode, barcodeAliases.join(' '), category, categories, ingredients, weight, shelfCode, status, getStatusLabel(status)]
       .join(' ')
       .toLocaleLowerCase(CONFIG.locale || undefined)
   };
@@ -656,6 +663,7 @@ function renderProductCard(product) {
   const button = fragment.querySelector('.product-card__button');
 
   const productUrl = `#/product/${encodeURIComponent(product.routeKey)}`;
+  card.classList.toggle('is-inactive', !isProductActive(product));
   link.href = productUrl;
   setImageOrFallback(image, imageFallback, product.imageUrl, `${product.name} product image`);
   category.textContent = product.category || 'Uncategorized';
@@ -665,7 +673,8 @@ function renderProductCard(product) {
   price.textContent = formatPriceLabel(product.price);
   price.classList.toggle('is-missing', !hasValidPrice(product));
   weight.textContent = product.weight || 'No weight';
-  shelfCode.textContent = product.shelfCode ? `Shelf ${product.shelfCode}` : 'Shelf not set';
+  shelfCode.textContent = `${product.shelfCode ? `Shelf ${product.shelfCode}` : 'Shelf not set'} · ${getStatusLabel(product.status)}`;
+  shelfCode.classList.toggle('is-inactive', !isProductActive(product));
 
   link.addEventListener('click', (event) => {
     event.preventDefault();
@@ -716,7 +725,10 @@ function openProduct(product) {
   const copyBarcodeButton = els.productDetails.querySelector('[data-action="copy-barcode"]');
   const copyLinkButton = els.productDetails.querySelector('[data-action="copy-link"]');
   const priceForm = els.productDetails.querySelector('[data-price-form]');
+  const statusEditor = els.productDetails.querySelector('[data-status-editor]');
+  const toggleStatusButton = els.productDetails.querySelector('[data-action="toggle-status"]');
   const shelfMap = els.productDetails.querySelector('[data-shelf-map]');
+  const shelfForm = els.productDetails.querySelector('[data-shelf-form]');
   const clearShelfCodeButton = els.productDetails.querySelector('[data-action="clear-shelfcode"]');
   setupStoreMapImage(shelfMap);
 
@@ -734,8 +746,15 @@ function openProduct(product) {
     saveProductPrice(product, priceForm);
   });
 
+  toggleStatusButton?.addEventListener('click', () => toggleProductStatus(product, statusEditor));
+
   shelfMap?.querySelectorAll('[data-shelf-dot]').forEach((button) => {
-    button.addEventListener('click', () => saveProductShelfCode(product, button.dataset.shelfDot, shelfMap));
+    button.addEventListener('click', () => selectShelfCodeOnMap(button.dataset.shelfDot, shelfMap));
+  });
+
+  shelfForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    saveProductShelfCode(product, shelfMap?.dataset.pendingShelfcode || '', shelfMap);
   });
 
   clearShelfCodeButton?.addEventListener('click', () => clearProductShelfCode(product, shelfMap));
@@ -750,56 +769,97 @@ function renderProductDetails(product) {
   const ingredients = product.ingredients || 'No ingredients text in the data yet.';
   const fullCategory = product.categories || product.category || 'No category path';
   const priceValue = Number.isFinite(product.price) && product.price > 0 ? product.price : '';
+  const active = isProductActive(product);
+  const statusDisplay = getStatusDisplay(product.status);
+  const statusButtonText = active ? 'Deactivate product locally' : 'Activate product locally';
+  const statusButtonClass = active ? 'button button--danger' : 'button button--success';
   const imageMarkup = `
     <img class="product-details__image" alt="${escapeAttribute(product.name)} product image" />
     <div class="product-details__image-fallback" hidden>No image</div>
   `;
 
   return `
-    <div>
+    <section class="product-details__media">
       ${imageMarkup}
-    </div>
-    <div class="product-details__content">
-      <span class="badge">${escapeHtml(product.category || 'Uncategorized')}</span>
-      <h2>${escapeHtml(product.name)}</h2>
-      <p class="product-card__brand">${escapeHtml(product.brand)}</p>
+      <div class="product-summary-card">
+        <div>
+          <span class="detail-label">Barcode / GTIN</span>
+          <strong>${escapeHtml(product.barcode || 'No barcode')}</strong>
+        </div>
+        <div>
+          <span class="detail-label">Weight</span>
+          <strong>${escapeHtml(product.weight || 'No weight')}</strong>
+        </div>
+        <div>
+          <span class="detail-label">Shelfcode</span>
+          <strong data-detail-shelfcode>${escapeHtml(product.shelfCode || 'Not set')}</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="product-details__content">
+      <header class="product-detail-header">
+        <div class="product-detail-title">
+          <span class="badge">${escapeHtml(product.category || 'Uncategorized')}</span>
+          <h2>${escapeHtml(product.name)}</h2>
+          <p class="product-card__brand">${escapeHtml(product.brand)}</p>
+        </div>
+        <span class="status-pill ${active ? 'status-pill--active' : 'status-pill--inactive'}" data-status-pill>${escapeHtml(statusDisplay)}</span>
+      </header>
+
       <div class="detail-price ${hasValidPrice(product) ? '' : 'product-card__price is-missing'}" data-current-price>
         ${escapeHtml(formatPriceLabel(product.price))}
       </div>
 
-      <form class="price-edit" data-price-form>
-        <label>
-          <span>New price</span>
-          <input name="price" type="number" min="0" step="0.01" inputmode="decimal" value="${escapeAttribute(priceValue)}" placeholder="Enter new price" />
-        </label>
-        <button class="button" type="submit">Update price locally</button>
-        <small data-price-status>Download the updated CSV to make the change permanent.</small>
-      </form>
+      <div class="local-edit-grid">
+        <form class="price-edit edit-card" data-price-form>
+          <div class="edit-card__header">
+            <strong>Price</strong>
+            <p>Update the local CSV price for this product.</p>
+          </div>
+          <label>
+            <span>New price</span>
+            <input name="price" type="number" min="0" step="0.01" inputmode="decimal" value="${escapeAttribute(priceValue)}" placeholder="Enter new price" />
+          </label>
+          <button class="button" type="submit">Update price locally</button>
+          <small data-price-status>Download the updated CSV to make the change permanent.</small>
+        </form>
 
-      <section class="shelfcode-editor" data-shelf-map>
+        <section class="status-editor edit-card" data-status-editor>
+          <div class="edit-card__header">
+            <strong>Status</strong>
+            <p>Current status: <span data-current-status>${escapeHtml(statusDisplay)}</span></p>
+          </div>
+          <button class="${statusButtonClass}" type="button" data-action="toggle-status">${escapeHtml(statusButtonText)}</button>
+          <small data-status-message>Status 1 = activated. Status 2 = deactivated. Download the updated CSV to keep the change.</small>
+        </section>
+      </div>
+
+      <section class="shelfcode-editor edit-card" data-shelf-map data-current-shelfcode-value="${escapeAttribute(product.shelfCode || '')}" data-pending-shelfcode="${escapeAttribute(product.shelfCode || '')}">
         <div class="shelfcode-editor__header">
           <div>
             <strong>Shelfcode</strong>
             <p>Current shelfcode: <span data-current-shelfcode>${escapeHtml(product.shelfCode || 'Not set')}</span></p>
+            <p>Selected on map: <span data-selected-shelfcode>${escapeHtml(product.shelfCode || 'None selected')}</span></p>
           </div>
-          <button class="button button--secondary" type="button" data-action="clear-shelfcode">Clear shelfcode</button>
         </div>
         <div class="store-map" role="application" aria-label="Store shelfcode map">
           <img class="store-map__image" data-store-map-image alt="Store shelfcode map" />
-          ${renderShelfCodeDots(product.shelfCode)}
+          ${renderShelfCodeDots(product.shelfCode, product.shelfCode)}
         </div>
-        <small class="shelfcode-editor__status" data-shelf-status>Tap a red dot to update this product's shelfcode.</small>
+        <form class="shelfcode-actions" data-shelf-form>
+          <button class="button" type="submit">Update shelfcode locally</button>
+          <button class="button button--secondary" type="button" data-action="clear-shelfcode">Clear shelfcode locally</button>
+        </form>
+        <small class="shelfcode-editor__status" data-shelf-status>Tap a red dot, then click Update shelfcode locally.</small>
       </section>
 
       <div class="detail-grid">
-        ${detailItem('Weight', product.weight || 'No weight')}
-        ${detailItem('Barcode / GTIN', product.barcode || 'No barcode')}
         <div class="detail-item">
-          <span class="detail-label">Shelfcode</span>
-          <span data-detail-shelfcode>${escapeHtml(product.shelfCode || 'Not set')}</span>
+          <span class="detail-label">Status</span>
+          <span data-detail-status>${escapeHtml(statusDisplay)}</span>
         </div>
         ${detailItem('Store category', product.category || 'Uncategorized')}
-        ${detailItem('Status', product.status || 'No status')}
         ${detailItem('CSV row', String(product.rowNumber))}
         ${detailItem('Product link', productLink)}
       </div>
@@ -818,7 +878,7 @@ function renderProductDetails(product) {
         <button class="button" type="button" data-action="copy-barcode">Copy barcode</button>
         <button class="button button--secondary" type="button" data-action="copy-link">Copy product link</button>
       </div>
-    </div>
+    </section>
   `;
 }
 
@@ -861,6 +921,53 @@ function saveProductPrice(product, form) {
 
   renderSummary();
   render();
+}
+
+
+function toggleProductStatus(product, container) {
+  const nextStatus = isProductActive(product)
+    ? String(CONFIG.inactiveStatusValue || '2')
+    : String(CONFIG.activeStatusValue || '1');
+  saveProductStatus(product, nextStatus, container);
+}
+
+function saveProductStatus(product, statusCode, container) {
+  const normalizedStatus = normalizeStatusCode(statusCode);
+  setField(product.sourceRow, CONFIG.statusField, ['status'], normalizedStatus);
+  product.status = normalizedStatus;
+  updateProductSearchText(product);
+
+  csvDirty = true;
+  els.downloadCsv.disabled = false;
+
+  updateStatusEditorState(product, container);
+  renderSummary();
+  render();
+}
+
+function updateStatusEditorState(product, container) {
+  const active = isProductActive(product);
+  const display = getStatusDisplay(product.status);
+  const current = container?.querySelector('[data-current-status]');
+  const message = container?.querySelector('[data-status-message]');
+  const button = container?.querySelector('[data-action="toggle-status"]');
+  const pill = els.productDetails.querySelector('[data-status-pill]');
+  const detailStatus = els.productDetails.querySelector('[data-detail-status]');
+
+  if (current) current.textContent = display;
+  if (detailStatus) detailStatus.textContent = display;
+  if (message) {
+    message.textContent = `Status updated locally to ${display}. Download the updated CSV to keep the change.`;
+    message.className = 'status-message status-message--success';
+  }
+  if (button) {
+    button.textContent = active ? 'Deactivate product locally' : 'Activate product locally';
+    button.className = active ? 'button button--danger' : 'button button--success';
+  }
+  if (pill) {
+    pill.textContent = display;
+    pill.className = `status-pill ${active ? 'status-pill--active' : 'status-pill--inactive'}`;
+  }
 }
 
 
@@ -907,16 +1014,77 @@ function setupStoreMapImage(container) {
   tryCandidate();
 }
 
-function renderShelfCodeDots(activeShelfCode) {
+function renderShelfCodeDots(activeShelfCode, selectedShelfCode = activeShelfCode) {
   const active = normalizeShelfCode(activeShelfCode);
+  const selected = normalizeShelfCode(selectedShelfCode);
   return STORE_DOTS.map((dot) => {
     const isActive = dot.id === active;
-    return `<button type="button" class="map-dot ${isActive ? 'active' : ''}" data-shelf-dot="${escapeAttribute(dot.id)}" title="${escapeAttribute(dot.id)}" aria-label="Set shelfcode ${escapeAttribute(dot.id)}" style="left: ${dot.x}%; top: ${dot.y}%;">${escapeHtml(dot.id)}</button>`;
+    const isSelected = dot.id === selected;
+    const classes = ['map-dot', isActive ? 'active' : '', isSelected && !isActive ? 'selected' : ''].filter(Boolean).join(' ');
+    return `<button type="button" class="${classes}" data-shelf-dot="${escapeAttribute(dot.id)}" title="${escapeAttribute(dot.id)}" aria-label="Select shelfcode ${escapeAttribute(dot.id)}" style="left: ${dot.x}%; top: ${dot.y}%;">${escapeHtml(dot.id)}</button>`;
   }).join('');
 }
 
 function normalizeShelfCode(value) {
   return String(value || '').trim().toUpperCase().replace(/\s+/g, '');
+}
+
+function normalizeStatusCode(value) {
+  const raw = String(value ?? '').trim();
+  const activeValue = String(CONFIG.activeStatusValue || '1');
+  const inactiveValue = String(CONFIG.inactiveStatusValue || '2');
+  const lower = raw.toLowerCase();
+
+  if (!raw) return activeValue;
+  if (raw === inactiveValue || lower === 'inactive' || lower === 'deactivated' || lower === 'disabled' || raw === '0') {
+    return inactiveValue;
+  }
+  if (raw === activeValue || lower === 'active' || lower === 'activated' || lower === 'enabled') {
+    return activeValue;
+  }
+  return raw;
+}
+
+function isProductActive(product) {
+  return normalizeStatusCode(product?.status) !== String(CONFIG.inactiveStatusValue || '2');
+}
+
+function getStatusLabel(status) {
+  const code = normalizeStatusCode(status);
+  if (code === String(CONFIG.inactiveStatusValue || '2')) return 'Deactivated';
+  if (code === String(CONFIG.activeStatusValue || '1')) return 'Active';
+  return `Status ${code}`;
+}
+
+function getStatusDisplay(status) {
+  const code = normalizeStatusCode(status);
+  return `${getStatusLabel(code)} (${code})`;
+}
+
+function selectShelfCodeOnMap(rawShelfCode, container) {
+  const shelfCode = normalizeShelfCode(rawShelfCode);
+  const status = container?.querySelector('[data-shelf-status]');
+  const selected = container?.querySelector('[data-selected-shelfcode]');
+
+  if (!STORE_DOT_IDS.has(shelfCode)) {
+    if (status) {
+      status.textContent = 'Select a valid shelfcode from the map.';
+      status.className = 'shelfcode-editor__status shelfcode-editor__status--error';
+    }
+    return;
+  }
+
+  if (container) container.dataset.pendingShelfcode = shelfCode;
+  if (selected) selected.textContent = shelfCode;
+
+  container?.querySelectorAll('[data-shelf-dot]').forEach((button) => {
+    button.classList.toggle('selected', button.dataset.shelfDot === shelfCode && !button.classList.contains('active'));
+  });
+
+  if (status) {
+    status.textContent = `Selected ${shelfCode}. Click Update shelfcode locally to save this shelfcode.`;
+    status.className = 'shelfcode-editor__status';
+  }
 }
 
 function saveProductShelfCode(product, rawShelfCode, container) {
@@ -960,11 +1128,16 @@ function updateShelfCodeEditorState(container, shelfCode) {
   const status = container.querySelector('[data-shelf-status]');
   const detailShelfCode = els.productDetails.querySelector('[data-detail-shelfcode]');
   const normalized = normalizeShelfCode(shelfCode);
+  const selected = container.querySelector('[data-selected-shelfcode]');
 
   if (current) current.textContent = normalized || 'Not set';
+  if (selected) selected.textContent = normalized || 'None selected';
   if (detailShelfCode) detailShelfCode.textContent = normalized || 'Not set';
+  container.dataset.currentShelfcodeValue = normalized;
+  container.dataset.pendingShelfcode = normalized;
   container.querySelectorAll('[data-shelf-dot]').forEach((button) => {
     button.classList.toggle('active', button.dataset.shelfDot === normalized);
+    button.classList.toggle('selected', false);
   });
 
   if (status) {
@@ -985,7 +1158,9 @@ function updateProductSearchText(product) {
     product.categories,
     product.ingredients,
     product.weight,
-    product.shelfCode
+    product.shelfCode,
+    product.status,
+    getStatusLabel(product.status)
   ]
     .join(' ')
     .toLocaleLowerCase(CONFIG.locale || undefined);

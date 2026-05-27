@@ -3,17 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="display-app V1.2 manual CSV product viewer with barcode lookup, local price editing, and shelfcode map selection." />
-    <title>display-app V1.2</title>
+    <meta name="description" content="display-app.v1.3 manual CSV product viewer with barcode lookup, local price, shelfcode, and status editing." />
+    <title>display-app.v1.3</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="hero">
       <div class="hero__content">
         <p class="eyebrow">Manual CSV product display</p>
-        <h1 id="store-name">display-app V1.2</h1>
+        <h1 id="store-name">display-app.v1.3</h1>
         <p class="hero__text">
-          Upload a CSV in the browser, scan or enter a barcode, open a product, edit its price, and set its shelfcode by tapping a location on the store map.
+          Upload a CSV in the browser, scan or enter a barcode, open a product, edit its price, update its shelfcode from the map, and activate or deactivate it.
         </p>
       </div>
       <div class="hero__panel" aria-label="Product summary">
@@ -38,7 +38,7 @@
           <div>
             <p class="eyebrow eyebrow--dark">Barcode lookup</p>
             <h2>Scan or enter a barcode</h2>
-            <p>If the barcode exists in the uploaded CSV, the app opens that product so you can update the price or shelfcode.</p>
+            <p>If the barcode exists in the uploaded CSV, the app opens that product so you can update the price, shelfcode, or status.</p>
           </div>
           <div class="scanner-panel__actions">
             <button id="start-scanner" type="button" class="button">Start camera scan</button>
@@ -61,7 +61,7 @@
       <section class="toolbar" aria-label="Product filters">
         <label class="search-box">
           <span>Search products</span>
-          <input id="search-input" type="search" autocomplete="off" placeholder="Search by name, brand, barcode, shelfcode, ingredients..." />
+          <input id="search-input" type="search" autocomplete="off" placeholder="Search by name, brand, barcode, shelfcode, status, ingredients..." />
         </label>
 
         <label>
@@ -111,7 +111,7 @@
         <div>
           <h2>Manual CSV upload</h2>
           <p>
-            Upload your product CSV here. Price and shelfcode edits stay local until you click <strong>Download updated CSV</strong> and save the new file wherever you manage your products.
+            Upload your product CSV here. Price, shelfcode, and status edits stay local until you click <strong>Download updated CSV</strong> and save the new file wherever you manage your products.
           </p>
         </div>
         <div class="import-actions">

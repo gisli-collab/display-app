@@ -1,8 +1,8 @@
 {
-  "name": "display-app-v1.2",
-  "version": "1.2.0",
+  "name": "display-app-v1.3",
+  "version": "1.3.0",
   "private": true,
-  "description": "Static Netlify product display app with manual CSV upload, barcode lookup, local price editing, and shelfcode map selection.",
+  "description": "Static Netlify product display app with manual CSV upload, barcode lookup, local price, shelfcode, and status editing.",
   "scripts": {
     "start": "npx serve .",
     "build": "echo 'Static site; no build step required'"
