@@ -796,7 +796,7 @@ button.map-dot.active {
   }
 }
 
-/* display-app.v1.5 product detail layout */
+/* display-app.v1.6 product detail layout */
 .product-card.is-inactive {
   opacity: 0.68;
 }
@@ -1073,7 +1073,7 @@ button.map-dot.active.selected {
 }
 
 
-/* display-app.v1.5 product detail layout */
+/* display-app.v1.6 product detail layout */
 .product-dialog {
   width: min(1320px, calc(100% - 2rem));
   max-height: min(920px, calc(100dvh - 2rem));
@@ -1306,7 +1306,7 @@ button.map-dot.active.selected {
 }
 
 
-/* display-app.v1.5 open product layout */
+/* display-app.v1.6 open product layout */
 .product-dialog {
   width: min(1440px, calc(100% - 1rem));
   max-height: min(940px, calc(100dvh - 1rem));
@@ -1599,7 +1599,7 @@ button.map-dot.active.selected {
   }
 }
 
-/* display-app.v1.5 full-screen product detail view */
+/* display-app.v1.6 full-screen product detail view */
 .product-dialog {
   width: 100vw;
   max-width: none;
@@ -1629,6 +1629,87 @@ button.map-dot.active.selected {
 
 .product-details {
   width: min(1440px, 100%);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding-top: max(clamp(0.9rem, 2vw, 1.4rem), env(safe-area-inset-top));
+  padding-right: clamp(4.25rem, 5vw, 5.5rem);
+  padding-bottom: max(clamp(1rem, 2vw, 1.6rem), env(safe-area-inset-bottom));
+  padding-left: clamp(0.9rem, 2vw, 1.4rem);
+}
+
+@media (max-width: 860px) {
+  .product-details {
+    width: min(760px, 100%);
+    padding-top: max(0.85rem, env(safe-area-inset-top));
+    padding-right: clamp(3rem, 12vw, 3.85rem);
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: 0.85rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .product-details {
+    padding-right: 3rem;
+    padding-left: 0.72rem;
+  }
+}
+
+/* display-app.v1.6 product detail viewport fix
+   The product editor is a fixed full-screen overlay, not a native dialog.
+   This prevents the editor from opening at the top of the underlying product grid scroll position. */
+html.product-overlay-open,
+body.product-overlay-open {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.product-dialog[hidden] {
+  display: none !important;
+}
+
+.product-dialog {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  display: block;
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  transform: none !important;
+  background: var(--bg);
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  z-index: 1000;
+}
+
+.product-dialog.is-open {
+  display: block !important;
+}
+
+.dialog-close {
+  position: fixed !important;
+  top: max(0.75rem, env(safe-area-inset-top)) !important;
+  right: max(0.75rem, env(safe-area-inset-right)) !important;
+  left: auto !important;
+  z-index: 1010 !important;
+  margin: 0 !important;
+}
+
+.product-details {
+  width: min(1440px, 100%);
+  min-height: 100vh;
   min-height: 100dvh;
   margin: 0 auto;
   padding-top: max(clamp(0.9rem, 2vw, 1.4rem), env(safe-area-inset-top));

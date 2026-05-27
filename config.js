@@ -1,5 +1,5 @@
 window.STORE_DISPLAY_CONFIG = {
-  storeName: 'display-app.v1.5',
+  storeName: 'display-app.v1.6',
 
   // Manual upload mode:
   // Leave dataSource empty so no product CSV is hardcoded into GitHub/Netlify.

@@ -3,15 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="display-app.v1.5 manual CSV product viewer with barcode lookup and a full-screen product detail editor for price, shelfcode, and status." />
-    <title>display-app.v1.5</title>
+    <meta name="description" content="display-app.v1.6 manual CSV product viewer with barcode lookup and a full-screen product detail editor for price, shelfcode, and status." />
+    <title>display-app.v1.6</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="hero">
       <div class="hero__content">
         <p class="eyebrow">Manual CSV product display</p>
-        <h1 id="store-name">display-app.v1.5</h1>
+        <h1 id="store-name">display-app.v1.6</h1>
         <p class="hero__text">
           Upload a CSV in the browser, scan or enter a barcode, open a product, then update price, shelfcode, or status locally before downloading the updated CSV.
         </p>
@@ -124,10 +124,10 @@
       </section>
     </main>
 
-    <dialog id="product-dialog" class="product-dialog">
+    <section id="product-dialog" class="product-dialog" role="dialog" aria-modal="true" aria-label="Product details" aria-hidden="true" hidden>
       <button id="dialog-close" type="button" class="dialog-close" aria-label="Close product details">x</button>
       <article id="product-details" class="product-details"></article>
-    </dialog>
+    </section>
 
     <template id="product-card-template">
       <article class="product-card">

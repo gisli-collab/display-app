@@ -1,5 +1,5 @@
 const DEFAULT_CONFIG = {
-  storeName: 'display-app.v1.5',
+  storeName: 'display-app.v1.6',
   dataSource: '',
   currency: 'ISK',
   locale: 'is-IS',
@@ -128,6 +128,7 @@ let productRouteMap = new Map();
 let productBarcodeMap = new Map();
 let activeSourceName = CONFIG.dataSource || 'No CSV loaded';
 let csvDirty = false;
+let lastFocusedBeforeProduct = null;
 let html5QrcodeScanner = null;
 let scannerRunning = false;
 let lastScannerText = '';
@@ -174,15 +175,16 @@ function bindEvents() {
     }
   });
 
-  els.dialogClose.addEventListener('click', () => els.dialog.close());
+  els.dialogClose.addEventListener('click', () => closeProductOverlay({ clearHash: true }));
   els.dialog.addEventListener('click', (event) => {
     if (event.target === els.dialog) {
-      els.dialog.close();
+      closeProductOverlay({ clearHash: true });
     }
   });
-  els.dialog.addEventListener('close', () => {
-    if (location.hash.startsWith('#/product/')) {
-      history.pushState('', document.title, `${location.pathname}${location.search}`);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && isProductOverlayOpen()) {
+      event.preventDefault();
+      closeProductOverlay({ clearHash: true });
     }
   });
 
@@ -705,14 +707,64 @@ function navigateToProduct(product) {
 }
 
 function openProductFromHash() {
-  if (!location.hash.startsWith('#/product/')) return;
+  if (!location.hash.startsWith('#/product/')) {
+    if (isProductOverlayOpen()) {
+      closeProductOverlay({ clearHash: false });
+    }
+    return;
+  }
+
   const rawKey = location.hash.replace('#/product/', '');
   const key = decodeURIComponent(rawKey).toLowerCase();
   const product = productRouteMap.get(key);
 
   if (product) {
     openProduct(product);
+  } else if (isProductOverlayOpen()) {
+    closeProductOverlay({ clearHash: false });
   }
+}
+
+function isProductOverlayOpen() {
+  return Boolean(els.dialog && !els.dialog.hidden);
+}
+
+function openProductOverlay() {
+  if (!els.dialog) return;
+
+  if (els.dialog.hidden) {
+    lastFocusedBeforeProduct = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }
+
+  els.dialog.hidden = false;
+  els.dialog.classList.add('is-open');
+  els.dialog.setAttribute('aria-hidden', 'false');
+  document.documentElement.classList.add('product-overlay-open');
+  document.body.classList.add('product-overlay-open');
+}
+
+function closeProductOverlay({ clearHash = false } = {}) {
+  if (!els.dialog || els.dialog.hidden) return;
+
+  els.dialog.classList.remove('is-open');
+  els.dialog.hidden = true;
+  els.dialog.setAttribute('aria-hidden', 'true');
+  document.documentElement.classList.remove('product-overlay-open');
+  document.body.classList.remove('product-overlay-open');
+
+  if (clearHash && location.hash.startsWith('#/product/')) {
+    history.pushState('', document.title, `${location.pathname}${location.search}`);
+  }
+
+  if (lastFocusedBeforeProduct && typeof lastFocusedBeforeProduct.focus === 'function') {
+    try {
+      lastFocusedBeforeProduct.focus({ preventScroll: true });
+    } catch (error) {
+      lastFocusedBeforeProduct.focus();
+    }
+  }
+
+  lastFocusedBeforeProduct = null;
 }
 
 function resetProductDialogScroll() {
@@ -721,9 +773,25 @@ function resetProductDialogScroll() {
   els.dialog.scrollTop = 0;
   els.dialog.scrollLeft = 0;
 
+  if (typeof els.dialog.scrollTo === 'function') {
+    try {
+      els.dialog.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    } catch (error) {
+      els.dialog.scrollTo(0, 0);
+    }
+  }
+
   if (els.productDetails) {
     els.productDetails.scrollTop = 0;
     els.productDetails.scrollLeft = 0;
+
+    if (typeof els.productDetails.scrollTo === 'function') {
+      try {
+        els.productDetails.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } catch (error) {
+        els.productDetails.scrollTo(0, 0);
+      }
+    }
   }
 }
 
@@ -771,12 +839,13 @@ function openProduct(product) {
 
   clearShelfCodeButton?.addEventListener('click', () => clearProductShelfCode(product, shelfMap));
 
-  if (!els.dialog.open) {
-    els.dialog.showModal();
-  }
-
+  openProductOverlay();
   resetProductDialogScroll();
-  requestAnimationFrame(resetProductDialogScroll);
+  requestAnimationFrame(() => {
+    resetProductDialogScroll();
+    els.dialogClose?.focus({ preventScroll: true });
+    setTimeout(resetProductDialogScroll, 0);
+  });
 }
 
 function renderProductDetails(product) {
