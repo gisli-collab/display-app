@@ -1,5 +1,5 @@
 const DEFAULT_CONFIG = {
-  storeName: 'display-app.v1.3',
+  storeName: 'display-app.v1.4',
   dataSource: '',
   currency: 'ISK',
   locale: 'is-IS',
@@ -779,30 +779,12 @@ function renderProductDetails(product) {
   `;
 
   return `
-    <section class="product-details__media">
-      ${imageMarkup}
-      <div class="product-summary-card">
-        <div>
-          <span class="detail-label">Barcode / GTIN</span>
-          <strong>${escapeHtml(product.barcode || 'No barcode')}</strong>
-        </div>
-        <div>
-          <span class="detail-label">Weight</span>
-          <strong>${escapeHtml(product.weight || 'No weight')}</strong>
-        </div>
-        <div>
-          <span class="detail-label">Shelfcode</span>
-          <strong data-detail-shelfcode>${escapeHtml(product.shelfCode || 'Not set')}</strong>
-        </div>
-      </div>
-    </section>
-
-    <section class="product-details__content">
-      <header class="product-detail-header">
+    <section class="product-detail-main" aria-label="Main product details">
+      <header class="product-detail-hero-header">
         <div class="product-detail-title">
           <span class="badge">${escapeHtml(product.category || 'Uncategorized')}</span>
-          <h2>${escapeHtml(product.name)}</h2>
-          <p class="product-card__brand">${escapeHtml(product.brand)}</p>
+          <h2 class="product-detail-name">${escapeHtml(product.name)}</h2>
+          <p class="product-detail-brand">${escapeHtml(product.brand || 'No brand')}</p>
         </div>
         <span class="status-pill ${active ? 'status-pill--active' : 'status-pill--inactive'}" data-status-pill>${escapeHtml(statusDisplay)}</span>
       </header>
@@ -811,11 +793,20 @@ function renderProductDetails(product) {
         ${escapeHtml(formatPriceLabel(product.price))}
       </div>
 
-      <div class="local-edit-grid">
-        <form class="price-edit edit-card" data-price-form>
+      <div class="product-detail-photo-frame">
+        ${imageMarkup}
+      </div>
+    </section>
+
+    <aside class="product-detail-actions" aria-label="Product actions">
+      <div class="actions-stack">
+        <form class="price-edit edit-card action-card" data-price-form>
           <div class="edit-card__header">
-            <strong>Price</strong>
-            <p>Update the local CSV price for this product.</p>
+            <span class="action-number">1</span>
+            <div>
+              <strong>Change price</strong>
+              <p>Update the local CSV price for this product.</p>
+            </div>
           </div>
           <label>
             <span>New price</span>
@@ -825,40 +816,64 @@ function renderProductDetails(product) {
           <small data-price-status>Download the updated CSV to make the change permanent.</small>
         </form>
 
-        <section class="status-editor edit-card" data-status-editor>
+        <section class="status-editor edit-card action-card" data-status-editor>
           <div class="edit-card__header">
-            <strong>Status</strong>
-            <p>Current status: <span data-current-status>${escapeHtml(statusDisplay)}</span></p>
+            <span class="action-number">2</span>
+            <div>
+              <strong>Change status</strong>
+              <p>Current status: <span data-current-status>${escapeHtml(statusDisplay)}</span></p>
+            </div>
           </div>
           <button class="${statusButtonClass}" type="button" data-action="toggle-status">${escapeHtml(statusButtonText)}</button>
           <small data-status-message>Status 1 = activated. Status 2 = deactivated. Download the updated CSV to keep the change.</small>
         </section>
-      </div>
 
-      <section class="shelfcode-editor edit-card" data-shelf-map data-current-shelfcode-value="${escapeAttribute(product.shelfCode || '')}" data-pending-shelfcode="${escapeAttribute(product.shelfCode || '')}">
-        <div class="shelfcode-editor__header">
-          <div>
-            <strong>Shelfcode</strong>
-            <p>Current shelfcode: <span data-current-shelfcode>${escapeHtml(product.shelfCode || 'Not set')}</span></p>
-            <p>Selected on map: <span data-selected-shelfcode>${escapeHtml(product.shelfCode || 'None selected')}</span></p>
+        <section class="shelfcode-editor edit-card action-card" data-shelf-map data-current-shelfcode-value="${escapeAttribute(product.shelfCode || '')}" data-pending-shelfcode="${escapeAttribute(product.shelfCode || '')}">
+          <div class="shelfcode-editor__header edit-card__header">
+            <span class="action-number">3</span>
+            <div>
+              <strong>Change shelfcode</strong>
+              <p>Current shelfcode: <span data-current-shelfcode>${escapeHtml(product.shelfCode || 'Not set')}</span></p>
+              <p>Selected on map: <span data-selected-shelfcode>${escapeHtml(product.shelfCode || 'None selected')}</span></p>
+            </div>
           </div>
-        </div>
-        <div class="store-map" role="application" aria-label="Store shelfcode map">
-          <img class="store-map__image" data-store-map-image alt="Store shelfcode map" />
-          ${renderShelfCodeDots(product.shelfCode, product.shelfCode)}
-        </div>
-        <form class="shelfcode-actions" data-shelf-form>
-          <button class="button" type="submit">Update shelfcode locally</button>
-          <button class="button button--secondary" type="button" data-action="clear-shelfcode">Clear shelfcode locally</button>
-        </form>
-        <small class="shelfcode-editor__status" data-shelf-status>Tap a red dot, then click Update shelfcode locally.</small>
-      </section>
+          <div class="store-map" role="application" aria-label="Store shelfcode map">
+            <img class="store-map__image" data-store-map-image alt="Store shelfcode map" />
+            ${renderShelfCodeDots(product.shelfCode, product.shelfCode)}
+          </div>
+          <form class="shelfcode-actions" data-shelf-form>
+            <button class="button" type="submit">Update shelfcode locally</button>
+            <button class="button button--secondary" type="button" data-action="clear-shelfcode">Clear shelfcode locally</button>
+          </form>
+          <small class="shelfcode-editor__status" data-shelf-status>Tap a red dot, then click Update shelfcode locally.</small>
+        </section>
+      </div>
+    </aside>
+
+    <section class="product-detail-info" aria-label="Product information">
+      <div class="info-section-header">
+        <span class="eyebrow eyebrow--dark">Product information</span>
+        <h3>Info</h3>
+      </div>
 
       <div class="detail-grid">
         <div class="detail-item">
           <span class="detail-label">Status</span>
           <span data-detail-status>${escapeHtml(statusDisplay)}</span>
         </div>
+        <div class="detail-item">
+          <span class="detail-label">Weight</span>
+          <span>${escapeHtml(product.weight || 'No weight')}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Shelfcode</span>
+          <span data-detail-shelfcode>${escapeHtml(product.shelfCode || 'Not set')}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Barcode / GTIN</span>
+          <span>${escapeHtml(product.barcode || 'No barcode')}</span>
+        </div>
+        ${detailItem('Brand', product.brand || 'No brand')}
         ${detailItem('Store category', product.category || 'Uncategorized')}
         ${detailItem('CSV row', String(product.rowNumber))}
         ${detailItem('Product link', productLink)}
@@ -913,7 +928,7 @@ function saveProductPrice(product, form) {
   status.textContent = `Price updated locally to ${formatPriceLabel(product.price)}. Download the CSV to publish the change.`;
   status.className = 'price-status price-status--success';
 
-  const currentPrice = form.closest('.product-details__content')?.querySelector('[data-current-price]');
+  const currentPrice = els.productDetails.querySelector('[data-current-price]');
   if (currentPrice) {
     currentPrice.textContent = formatPriceLabel(product.price);
     currentPrice.classList.toggle('is-missing', !hasValidPrice(product));

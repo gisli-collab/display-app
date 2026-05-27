@@ -1,6 +1,6 @@
 {
-  "name": "display-app-v1.3",
-  "version": "1.3.0",
+  "name": "display-app-v1.4",
+  "version": "1.4.0",
   "private": true,
   "description": "Static Netlify product display app with manual CSV upload, barcode lookup, local price, shelfcode, and status editing.",
   "scripts": {
