@@ -28,6 +28,7 @@ priceField: 'cost'
 imageField: 'img'
 barcodeField: 'barcodex'
 shelfCodeField: 'shelfcode'
+storeMapImage: 'store-map.png'
 ```
 
 If your uploaded CSV does not have a `shelfcode` column, the app will add it when you download the updated CSV.
@@ -63,7 +64,7 @@ config.js
 netlify.toml
 package.json
 README.md
-assets/store-map.png
+store-map.png
 ```
 
 Do not upload product CSV files if you want the app to stay empty until manual upload.
@@ -77,6 +78,7 @@ data/products.csv
 products.csv
 products.js
 assets/placeholder.svg
+assets/store-map.png
 netlify/functions/products.js
 netlify/functions/update-price.js
 ```

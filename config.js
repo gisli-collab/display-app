@@ -12,5 +12,7 @@ window.STORE_DISPLAY_CONFIG = {
   imageField: 'img',
   barcodeField: 'barcodex',
   shelfCodeField: 'shelfcode',
+  // The store map image is expected in the repo root.
+  storeMapImage: 'store-map.png',
   defaultSort: 'name-asc'
 };

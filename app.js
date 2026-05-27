@@ -7,6 +7,7 @@ const DEFAULT_CONFIG = {
   imageField: 'img',
   barcodeField: 'barcodex',
   shelfCodeField: 'shelfcode',
+  storeMapImage: 'store-map.png',
   defaultSort: 'name-asc'
 };
 
@@ -717,6 +718,7 @@ function openProduct(product) {
   const priceForm = els.productDetails.querySelector('[data-price-form]');
   const shelfMap = els.productDetails.querySelector('[data-shelf-map]');
   const clearShelfCodeButton = els.productDetails.querySelector('[data-action="clear-shelfcode"]');
+  setupStoreMapImage(shelfMap);
 
   copyBarcodeButton?.addEventListener('click', async () => {
     await copyText(product.barcode || product.name, copyBarcodeButton, 'Copied barcode');
@@ -783,7 +785,7 @@ function renderProductDetails(product) {
           <button class="button button--secondary" type="button" data-action="clear-shelfcode">Clear shelfcode</button>
         </div>
         <div class="store-map" role="application" aria-label="Store shelfcode map">
-          <img class="store-map__image" src="assets/store-map.png" alt="Store shelfcode map" />
+          <img class="store-map__image" data-store-map-image alt="Store shelfcode map" />
           ${renderShelfCodeDots(product.shelfCode)}
         </div>
         <small class="shelfcode-editor__status" data-shelf-status>Tap a red dot to update this product's shelfcode.</small>
@@ -861,6 +863,49 @@ function saveProductPrice(product, form) {
   render();
 }
 
+
+function setupStoreMapImage(container) {
+  if (!container) return;
+  const image = container.querySelector('[data-store-map-image]');
+  const status = container.querySelector('[data-shelf-status]');
+  if (!image) return;
+
+  const configuredPath = String(CONFIG.storeMapImage || '').trim();
+  const candidates = uniqueStrings([
+    configuredPath,
+    'store-map.png',
+    './store-map.png',
+    'assets/store-map.png'
+  ]).filter(Boolean);
+
+  let index = 0;
+
+  const tryCandidate = () => {
+    const nextPath = candidates[index];
+    if (!nextPath) {
+      image.hidden = true;
+      container.classList.add('store-map--missing-image');
+      if (status) {
+        status.textContent = 'Store map image not found. Upload store-map.png in the repo root.';
+        status.className = 'shelfcode-editor__status shelfcode-editor__status--error';
+      }
+      return;
+    }
+    image.hidden = false;
+    image.src = nextPath;
+  };
+
+  image.addEventListener('load', () => {
+    container.classList.remove('store-map--missing-image');
+  });
+
+  image.addEventListener('error', () => {
+    index += 1;
+    tryCandidate();
+  });
+
+  tryCandidate();
+}
 
 function renderShelfCodeDots(activeShelfCode) {
   const active = normalizeShelfCode(activeShelfCode);

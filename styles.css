@@ -18,6 +18,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   background: radial-gradient(circle at top left, #d1fae5 0, rgba(209, 250, 229, 0) 34rem), var(--bg);
@@ -727,6 +731,20 @@ select:focus {
   border: 1px solid var(--border);
   border-radius: 1rem;
   background: #eef2f7;
+}
+
+.store-map--missing-image {
+  min-height: 28rem;
+}
+
+.store-map--missing-image::before {
+  content: 'Missing store-map.png';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-weight: 850;
 }
 
 .store-map__image {
