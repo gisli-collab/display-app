@@ -1,13 +1,13 @@
-# display-app.v1.4
+# display-app.v1.5
 
-Static Netlify product display app for manual CSV upload with a two-column product detail editor on desktop and a stacked layout on phones.
+Static Netlify product display app for manual CSV upload with a full-screen product detail editor. Opening a product now starts at the top of the detail view on desktop and phones.
 
 ## What it does
 
 - Upload a CSV in the browser. No product data is hardcoded in GitHub.
 - Search, filter, sort, and open products.
 - Scan or type a barcode to open an existing product.
-- Open a product with info on the left/top and actions on the right/second section.
+- Open a product in a full-screen detail view that resets to the top every time.
 - Update price locally.
 - Select a shelfcode from the clickable `store-map.png` overlay, then update the shelfcode locally.
 - Activate/deactivate a product locally using the `status` field. `1` means activated and `2` means deactivated.

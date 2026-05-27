@@ -1,5 +1,5 @@
 const DEFAULT_CONFIG = {
-  storeName: 'display-app.v1.4',
+  storeName: 'display-app.v1.5',
   dataSource: '',
   currency: 'ISK',
   locale: 'is-IS',
@@ -715,6 +715,18 @@ function openProductFromHash() {
   }
 }
 
+function resetProductDialogScroll() {
+  if (!els.dialog) return;
+
+  els.dialog.scrollTop = 0;
+  els.dialog.scrollLeft = 0;
+
+  if (els.productDetails) {
+    els.productDetails.scrollTop = 0;
+    els.productDetails.scrollLeft = 0;
+  }
+}
+
 function openProduct(product) {
   els.productDetails.innerHTML = renderProductDetails(product);
 
@@ -762,6 +774,9 @@ function openProduct(product) {
   if (!els.dialog.open) {
     els.dialog.showModal();
   }
+
+  resetProductDialogScroll();
+  requestAnimationFrame(resetProductDialogScroll);
 }
 
 function renderProductDetails(product) {

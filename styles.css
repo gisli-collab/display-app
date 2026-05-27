@@ -796,7 +796,7 @@ button.map-dot.active {
   }
 }
 
-/* display-app.v1.4 product detail layout */
+/* display-app.v1.5 product detail layout */
 .product-card.is-inactive {
   opacity: 0.68;
 }
@@ -1073,7 +1073,7 @@ button.map-dot.active.selected {
 }
 
 
-/* display-app.v1.4 product detail layout */
+/* display-app.v1.5 product detail layout */
 .product-dialog {
   width: min(1320px, calc(100% - 2rem));
   max-height: min(920px, calc(100dvh - 2rem));
@@ -1306,7 +1306,7 @@ button.map-dot.active.selected {
 }
 
 
-/* display-app.v1.4 open product layout */
+/* display-app.v1.5 open product layout */
 .product-dialog {
   width: min(1440px, calc(100% - 1rem));
   max-height: min(940px, calc(100dvh - 1rem));
@@ -1596,5 +1596,60 @@ button.map-dot.active.selected {
   .price-edit.edit-card.action-card,
   .shelfcode-editor.edit-card.action-card {
     border-radius: 1rem;
+  }
+}
+
+/* display-app.v1.5 full-screen product detail view */
+.product-dialog {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-radius: 0;
+  background: var(--bg);
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.product-dialog[open] {
+  display: block;
+}
+
+.dialog-close {
+  position: fixed;
+  top: max(0.75rem, env(safe-area-inset-top));
+  right: max(0.75rem, env(safe-area-inset-right));
+  left: auto;
+  z-index: 50;
+  margin: 0;
+}
+
+.product-details {
+  width: min(1440px, 100%);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding-top: max(clamp(0.9rem, 2vw, 1.4rem), env(safe-area-inset-top));
+  padding-right: clamp(4.25rem, 5vw, 5.5rem);
+  padding-bottom: max(clamp(1rem, 2vw, 1.6rem), env(safe-area-inset-bottom));
+  padding-left: clamp(0.9rem, 2vw, 1.4rem);
+}
+
+@media (max-width: 860px) {
+  .product-details {
+    width: min(760px, 100%);
+    padding-top: max(0.85rem, env(safe-area-inset-top));
+    padding-right: clamp(3rem, 12vw, 3.85rem);
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    padding-left: 0.85rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .product-details {
+    padding-right: 3rem;
+    padding-left: 0.72rem;
   }
 }
