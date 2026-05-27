@@ -3,18 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Manual CSV product display app with barcode lookup and local price editing." />
-    <title>Store Product Display</title>
-    <link rel="icon" href="assets/placeholder.svg" type="image/svg+xml" />
+    <meta name="description" content="display-app V1.2 manual CSV product viewer with barcode lookup, local price editing, and shelfcode map selection." />
+    <title>display-app V1.2</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="hero">
       <div class="hero__content">
         <p class="eyebrow">Manual CSV product display</p>
-        <h1 id="store-name">Store Product Display</h1>
+        <h1 id="store-name">display-app V1.2</h1>
         <p class="hero__text">
-          Browse products from <code>data/products.csv</code>, upload another CSV for preview, scan a barcode, and edit prices locally before downloading an updated CSV.
+          Upload a CSV in the browser, scan or enter a barcode, open a product, edit its price, and set its shelfcode by tapping a location on the store map.
         </p>
       </div>
       <div class="hero__panel" aria-label="Product summary">
@@ -39,7 +38,7 @@
           <div>
             <p class="eyebrow eyebrow--dark">Barcode lookup</p>
             <h2>Scan or enter a barcode</h2>
-            <p>If the barcode exists in the loaded CSV, the app opens that product so you can update the price.</p>
+            <p>If the barcode exists in the uploaded CSV, the app opens that product so you can update the price or shelfcode.</p>
           </div>
           <div class="scanner-panel__actions">
             <button id="start-scanner" type="button" class="button">Start camera scan</button>
@@ -56,13 +55,13 @@
         </div>
 
         <div id="scanner-reader" class="scanner-reader" hidden></div>
-        <small id="scanner-status" class="scanner-status" role="status" aria-live="polite">Load a CSV, then scan or enter a barcode.</small>
+        <small id="scanner-status" class="scanner-status" role="status" aria-live="polite">Upload a CSV file, then scan or enter a barcode.</small>
       </section>
 
       <section class="toolbar" aria-label="Product filters">
         <label class="search-box">
           <span>Search products</span>
-          <input id="search-input" type="search" autocomplete="off" placeholder="Search by name, brand, barcode, ingredients..." />
+          <input id="search-input" type="search" autocomplete="off" placeholder="Search by name, brand, barcode, shelfcode, ingredients..." />
         </label>
 
         <label>
@@ -87,6 +86,7 @@
             <option value="price-desc">Price high to low</option>
             <option value="brand-asc">Brand A-Z</option>
             <option value="category-asc">Category A-Z</option>
+            <option value="shelfcode-asc">Shelfcode A-Z</option>
           </select>
         </label>
 
@@ -94,8 +94,8 @@
       </section>
 
       <section class="status-line" aria-live="polite">
-        <span id="result-count">Loading products...</span>
-        <span id="data-source-label">Source: CSV</span>
+        <span id="result-count">Upload a CSV file to load products.</span>
+        <span id="data-source-label">Source: no CSV loaded</span>
       </section>
 
       <section id="category-chips" class="chip-row" aria-label="Quick category filters"></section>
@@ -104,20 +104,19 @@
 
       <section id="empty-state" class="empty-state" hidden>
         <h2>No products found</h2>
-        <p>Try changing the search, category, brand, or sort settings.</p>
+        <p>Upload a CSV file or try changing the search, category, brand, or sort settings.</p>
       </section>
 
       <section class="import-helper">
         <div>
           <h2>Manual CSV upload</h2>
           <p>
-            Replace <code>data/products.csv</code> in GitHub for the public Netlify version, or preview another CSV file here in your browser.
-            Price edits are local until you download the updated CSV and replace the file in GitHub.
+            Upload your product CSV here. Price and shelfcode edits stay local until you click <strong>Download updated CSV</strong> and save the new file wherever you manage your products.
           </p>
         </div>
         <div class="import-actions">
           <label class="file-loader">
-            <span>Preview another CSV file</span>
+            <span>Upload CSV file</span>
             <input id="csv-file-input" type="file" accept=".csv,text/csv" />
           </label>
           <button id="download-csv" type="button" class="button button--secondary" disabled>Download updated CSV</button>
@@ -134,6 +133,7 @@
       <article class="product-card">
         <a class="product-card__image-link" href="#">
           <img class="product-card__image" src="" alt="" loading="lazy" />
+          <span class="product-card__image-fallback" hidden>No image</span>
         </a>
         <div class="product-card__body">
           <div class="product-card__topline">
@@ -145,6 +145,9 @@
           <div class="product-card__meta">
             <strong class="product-card__price"></strong>
             <span class="product-card__weight"></span>
+          </div>
+          <div class="product-card__meta product-card__meta--subtle">
+            <span class="product-card__shelfcode"></span>
           </div>
           <button type="button" class="button product-card__button">Open product</button>
         </div>
