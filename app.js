@@ -1,11 +1,12 @@
 const DEFAULT_CONFIG = {
-  storeName: 'Store Product Display',
-  dataSource: './data/products.csv',
+  storeName: 'display-app V1.2',
+  dataSource: '',
   currency: 'ISK',
   locale: 'is-IS',
   priceField: 'cost',
   imageField: 'img',
   barcodeField: 'barcodex',
+  shelfCodeField: 'shelfcode',
   defaultSort: 'name-asc'
 };
 
@@ -13,6 +14,68 @@ const CONFIG = {
   ...DEFAULT_CONFIG,
   ...(window.STORE_DISPLAY_CONFIG || {})
 };
+
+
+const STORE_DOTS = [
+  { id: 'D400', x: 75.57, y: 5.95 },
+  { id: 'D500', x: 71.37, y: 10.13 },
+  { id: 'D300', x: 80.27, y: 10.13 },
+  { id: 'D900', x: 62.0, y: 10.13 },
+  { id: 'E100', x: 49.33, y: 19.14 },
+  { id: 'D200', x: 80.25, y: 20.75 },
+  { id: 'D100', x: 80.39, y: 29.07 },
+  { id: 'D600', x: 71.47, y: 29.08 },
+  { id: 'D800', x: 61.98, y: 29.09 },
+  { id: 'F400', x: 16.58, y: 29.97 },
+  { id: 'F300', x: 28.85, y: 29.98 },
+  { id: 'E200', x: 45.19, y: 29.98 },
+  { id: 'D700', x: 66.68, y: 32.89 },
+  { id: 'F500', x: 16.63, y: 38.97 },
+  { id: 'F200', x: 28.88, y: 38.98 },
+  { id: 'C700', x: 71.56, y: 40.45 },
+  { id: 'E300', x: 45.18, y: 41.0 },
+  { id: 'B100', x: 71.55, y: 45.34 },
+  { id: 'C600', x: 61.85, y: 45.35 },
+  { id: 'A600', x: 83.44, y: 45.35 },
+  { id: 'F700', x: 16.62, y: 50.47 },
+  { id: 'F100', x: 28.87, y: 50.47 },
+  { id: 'E400', x: 45.22, y: 50.93 },
+  { id: 'A500', x: 83.46, y: 55.02 },
+  { id: 'C500', x: 61.91, y: 55.03 },
+  { id: 'B200', x: 71.73, y: 55.04 },
+  { id: 'G100', x: 20.03, y: 63.28 },
+  { id: 'G200', x: 32.28, y: 63.29 },
+  { id: 'I400', x: 33.43, y: 67.63 },
+  { id: 'K400', x: 14.97, y: 67.63 },
+  { id: 'J100', x: 25.02, y: 67.64 },
+  { id: 'H100', x: 48.37, y: 67.64 },
+  { id: 'A400', x: 83.46, y: 67.65 },
+  { id: 'B300', x: 71.66, y: 67.65 },
+  { id: 'C400', x: 62.18, y: 67.66 },
+  { id: 'J200', x: 25.0, y: 75.2 },
+  { id: 'K300', x: 14.98, y: 75.2 },
+  { id: 'I300', x: 33.45, y: 75.21 },
+  { id: 'H200', x: 48.37, y: 75.21 },
+  { id: 'C300', x: 62.07, y: 75.21 },
+  { id: 'B400', x: 71.63, y: 75.22 },
+  { id: 'A300', x: 83.45, y: 75.23 },
+  { id: 'A200', x: 83.47, y: 84.21 },
+  { id: 'C200', x: 62.1, y: 84.21 },
+  { id: 'B500', x: 71.67, y: 84.21 },
+  { id: 'K200', x: 14.98, y: 84.21 },
+  { id: 'J300', x: 25.05, y: 84.21 },
+  { id: 'I200', x: 33.46, y: 84.21 },
+  { id: 'H300', x: 48.39, y: 84.22 },
+  { id: 'J400', x: 25.0, y: 93.2 },
+  { id: 'B600', x: 71.71, y: 93.21 },
+  { id: 'H400', x: 48.37, y: 93.21 },
+  { id: 'K100', x: 14.98, y: 93.21 },
+  { id: 'A100', x: 83.46, y: 93.21 },
+  { id: 'C100', x: 62.07, y: 93.22 },
+  { id: 'I100', x: 33.45, y: 93.22 }
+];
+
+const STORE_DOT_IDS = new Set(STORE_DOTS.map((dot) => dot.id));
 
 const els = {
   storeName: document.querySelector('#store-name'),
@@ -59,7 +122,7 @@ let currentRows = [];
 let currentHeaders = [];
 let productRouteMap = new Map();
 let productBarcodeMap = new Map();
-let activeSourceName = CONFIG.dataSource;
+let activeSourceName = CONFIG.dataSource || 'No CSV loaded';
 let csvDirty = false;
 let html5QrcodeScanner = null;
 let scannerRunning = false;
@@ -123,6 +186,14 @@ function bindEvents() {
 }
 
 async function loadInitialData() {
+  if (!CONFIG.dataSource) {
+    setProducts([], 'No CSV loaded', [], { dirty: false });
+    els.resultCount.textContent = 'Upload a CSV file to load products.';
+    els.dataSourceLabel.textContent = 'Source: no CSV loaded';
+    updateScannerStatus('Upload a CSV file, then scan or enter a barcode.');
+    return;
+  }
+
   try {
     const response = await fetch(CONFIG.dataSource, { cache: 'no-store' });
     if (!response.ok) {
@@ -144,7 +215,7 @@ async function loadInitialData() {
     updateScannerStatus(`Loaded ${products.length} products. Scan or enter a barcode.`);
   } catch (error) {
     showError(`Could not load product data. ${error.message}`);
-    updateScannerStatus('Could not load the default CSV. Upload a CSV file, then scan or enter a barcode.');
+    updateScannerStatus('Could not load product data. Upload a CSV file, then scan or enter a barcode.');
   }
 }
 
@@ -245,7 +316,7 @@ function cleanHeader(value) {
 
 function normalizeHeaders(headers) {
   const cleaned = uniqueStrings(headers.map(cleanHeader));
-  const required = [CONFIG.priceField, CONFIG.barcodeField, CONFIG.imageField, 'name', 'weight', 'brand'];
+  const required = [CONFIG.priceField, CONFIG.barcodeField, CONFIG.imageField, CONFIG.shelfCodeField, 'name', 'weight', 'brand'];
   required.forEach((header) => {
     if (header && !cleaned.some((existing) => existing.toLowerCase() === String(header).toLowerCase())) {
       cleaned.push(header);
@@ -280,6 +351,7 @@ function normalizeProduct(row, index) {
   const ingredients = getField(sourceRow, ['ingredients', 'description']);
   const weight = getField(sourceRow, ['weight', 'package_weight', 'size']);
   const status = getField(sourceRow, ['status']);
+  const shelfCode = normalizeShelfCode(getField(sourceRow, [CONFIG.shelfCodeField, 'shelf_code', 'shelf', 'shelf_location', 'store_location', 'location']));
   const imageUrl = normalizeImageUrl(getField(sourceRow, [CONFIG.imageField, 'image', 'image_url', 'img_url']));
   const idBase = barcode || `${name}-${index + 1}`;
   const routeKey = slugify(idBase || `product-${index + 1}`);
@@ -301,8 +373,9 @@ function normalizeProduct(row, index) {
     ingredients: ingredients.trim(),
     weight: weight.trim(),
     status: status.trim(),
+    shelfCode,
     imageUrl,
-    searchText: [name, brand, barcode, barcodeAliases.join(' '), category, categories, ingredients, weight]
+    searchText: [name, brand, barcode, barcodeAliases.join(' '), category, categories, ingredients, weight, shelfCode]
       .join(' ')
       .toLocaleLowerCase(CONFIG.locale || undefined)
   };
@@ -426,7 +499,7 @@ function formatPriceForCsv(value) {
 
 function normalizeImageUrl(value) {
   const url = String(value || '').trim();
-  if (!url) return 'assets/placeholder.svg';
+  if (!url) return '';
   return url.replace(/^http:\/\//i, 'https://');
 }
 
@@ -489,7 +562,7 @@ function resetSummary() {
   els.totalProducts.textContent = '0';
   els.totalCategories.textContent = '0';
   els.averagePrice.textContent = '-';
-  els.dataSourceLabel.textContent = 'Source: CSV';
+  els.dataSourceLabel.textContent = 'Source: no CSV loaded';
 }
 
 function renderSummary() {
@@ -544,6 +617,8 @@ function compareProducts(a, b, sortValue) {
       return collator.compare(a.brand, b.brand) || collator.compare(a.name, b.name);
     case 'category-asc':
       return collator.compare(a.category, b.category) || collator.compare(a.name, b.name);
+    case 'shelfcode-asc':
+      return compareOptionalText(a.shelfCode, b.shelfCode) || collator.compare(a.name, b.name);
     case 'name-asc':
     default:
       return collator.compare(a.name, b.name);
@@ -556,27 +631,32 @@ function comparePrices(a, b, direction) {
   return direction === 'asc' ? aPrice - bPrice : bPrice - aPrice;
 }
 
+function compareOptionalText(aValue, bValue) {
+  const aText = String(aValue || '').trim();
+  const bText = String(bValue || '').trim();
+  if (aText && !bText) return -1;
+  if (!aText && bText) return 1;
+  return collator.compare(aText, bText);
+}
+
 function renderProductCard(product) {
   const fragment = els.cardTemplate.content.cloneNode(true);
   const card = fragment.querySelector('.product-card');
   const link = fragment.querySelector('.product-card__image-link');
   const image = fragment.querySelector('.product-card__image');
+  const imageFallback = fragment.querySelector('.product-card__image-fallback');
   const category = fragment.querySelector('.product-card__category');
   const barcode = fragment.querySelector('.product-card__barcode');
   const name = fragment.querySelector('.product-card__name');
   const brand = fragment.querySelector('.product-card__brand');
   const price = fragment.querySelector('.product-card__price');
   const weight = fragment.querySelector('.product-card__weight');
+  const shelfCode = fragment.querySelector('.product-card__shelfcode');
   const button = fragment.querySelector('.product-card__button');
 
   const productUrl = `#/product/${encodeURIComponent(product.routeKey)}`;
   link.href = productUrl;
-  image.src = product.imageUrl;
-  image.alt = `${product.name} product image`;
-  image.onerror = () => {
-    image.onerror = null;
-    image.src = 'assets/placeholder.svg';
-  };
+  setImageOrFallback(image, imageFallback, product.imageUrl, `${product.name} product image`);
   category.textContent = product.category || 'Uncategorized';
   barcode.textContent = product.barcode ? `#${product.barcode}` : `Row ${product.rowNumber}`;
   name.textContent = product.name;
@@ -584,6 +664,7 @@ function renderProductCard(product) {
   price.textContent = formatPriceLabel(product.price);
   price.classList.toggle('is-missing', !hasValidPrice(product));
   weight.textContent = product.weight || 'No weight';
+  shelfCode.textContent = product.shelfCode ? `Shelf ${product.shelfCode}` : 'Shelf not set';
 
   link.addEventListener('click', (event) => {
     event.preventDefault();
@@ -628,14 +709,14 @@ function openProduct(product) {
   els.productDetails.innerHTML = renderProductDetails(product);
 
   const detailImage = els.productDetails.querySelector('.product-details__image');
-  detailImage.onerror = () => {
-    detailImage.onerror = null;
-    detailImage.src = 'assets/placeholder.svg';
-  };
+  const detailFallback = els.productDetails.querySelector('.product-details__image-fallback');
+  setImageOrFallback(detailImage, detailFallback, product.imageUrl, `${product.name} product image`);
 
   const copyBarcodeButton = els.productDetails.querySelector('[data-action="copy-barcode"]');
   const copyLinkButton = els.productDetails.querySelector('[data-action="copy-link"]');
   const priceForm = els.productDetails.querySelector('[data-price-form]');
+  const shelfMap = els.productDetails.querySelector('[data-shelf-map]');
+  const clearShelfCodeButton = els.productDetails.querySelector('[data-action="clear-shelfcode"]');
 
   copyBarcodeButton?.addEventListener('click', async () => {
     await copyText(product.barcode || product.name, copyBarcodeButton, 'Copied barcode');
@@ -651,6 +732,12 @@ function openProduct(product) {
     saveProductPrice(product, priceForm);
   });
 
+  shelfMap?.querySelectorAll('[data-shelf-dot]').forEach((button) => {
+    button.addEventListener('click', () => saveProductShelfCode(product, button.dataset.shelfDot, shelfMap));
+  });
+
+  clearShelfCodeButton?.addEventListener('click', () => clearProductShelfCode(product, shelfMap));
+
   if (!els.dialog.open) {
     els.dialog.showModal();
   }
@@ -661,10 +748,14 @@ function renderProductDetails(product) {
   const ingredients = product.ingredients || 'No ingredients text in the data yet.';
   const fullCategory = product.categories || product.category || 'No category path';
   const priceValue = Number.isFinite(product.price) && product.price > 0 ? product.price : '';
+  const imageMarkup = `
+    <img class="product-details__image" alt="${escapeAttribute(product.name)} product image" />
+    <div class="product-details__image-fallback" hidden>No image</div>
+  `;
 
   return `
     <div>
-      <img class="product-details__image" src="${escapeAttribute(product.imageUrl)}" alt="${escapeAttribute(product.name)} product image" />
+      ${imageMarkup}
     </div>
     <div class="product-details__content">
       <span class="badge">${escapeHtml(product.category || 'Uncategorized')}</span>
@@ -683,9 +774,28 @@ function renderProductDetails(product) {
         <small data-price-status>Download the updated CSV to make the change permanent.</small>
       </form>
 
+      <section class="shelfcode-editor" data-shelf-map>
+        <div class="shelfcode-editor__header">
+          <div>
+            <strong>Shelfcode</strong>
+            <p>Current shelfcode: <span data-current-shelfcode>${escapeHtml(product.shelfCode || 'Not set')}</span></p>
+          </div>
+          <button class="button button--secondary" type="button" data-action="clear-shelfcode">Clear shelfcode</button>
+        </div>
+        <div class="store-map" role="application" aria-label="Store shelfcode map">
+          <img class="store-map__image" src="assets/store-map.png" alt="Store shelfcode map" />
+          ${renderShelfCodeDots(product.shelfCode)}
+        </div>
+        <small class="shelfcode-editor__status" data-shelf-status>Tap a red dot to update this product's shelfcode.</small>
+      </section>
+
       <div class="detail-grid">
         ${detailItem('Weight', product.weight || 'No weight')}
         ${detailItem('Barcode / GTIN', product.barcode || 'No barcode')}
+        <div class="detail-item">
+          <span class="detail-label">Shelfcode</span>
+          <span data-detail-shelfcode>${escapeHtml(product.shelfCode || 'Not set')}</span>
+        </div>
         ${detailItem('Store category', product.category || 'Uncategorized')}
         ${detailItem('Status', product.status || 'No status')}
         ${detailItem('CSV row', String(product.rowNumber))}
@@ -734,13 +844,11 @@ function saveProductPrice(product, form) {
   setField(product.sourceRow, CONFIG.priceField, ['price', 'regular_price'], formattedPrice);
   product.price = parsedPrice;
   product.priceRaw = formattedPrice;
-  product.searchText = [product.name, product.brand, product.barcode, product.barcodeAliases.join(' '), product.category, product.categories, product.ingredients, product.weight]
-    .join(' ')
-    .toLocaleLowerCase(CONFIG.locale || undefined);
+  updateProductSearchText(product);
 
   csvDirty = true;
   els.downloadCsv.disabled = false;
-  status.textContent = `Price updated locally to ${formatPriceLabel(product.price)}. Download the CSV and replace data/products.csv in GitHub to publish it.`;
+  status.textContent = `Price updated locally to ${formatPriceLabel(product.price)}. Download the CSV to publish the change.`;
   status.className = 'price-status price-status--success';
 
   const currentPrice = form.closest('.product-details__content')?.querySelector('[data-current-price]');
@@ -751,6 +859,115 @@ function saveProductPrice(product, form) {
 
   renderSummary();
   render();
+}
+
+
+function renderShelfCodeDots(activeShelfCode) {
+  const active = normalizeShelfCode(activeShelfCode);
+  return STORE_DOTS.map((dot) => {
+    const isActive = dot.id === active;
+    return `<button type="button" class="map-dot ${isActive ? 'active' : ''}" data-shelf-dot="${escapeAttribute(dot.id)}" title="${escapeAttribute(dot.id)}" aria-label="Set shelfcode ${escapeAttribute(dot.id)}" style="left: ${dot.x}%; top: ${dot.y}%;">${escapeHtml(dot.id)}</button>`;
+  }).join('');
+}
+
+function normalizeShelfCode(value) {
+  return String(value || '').trim().toUpperCase().replace(/\s+/g, '');
+}
+
+function saveProductShelfCode(product, rawShelfCode, container) {
+  const shelfCode = normalizeShelfCode(rawShelfCode);
+  const status = container?.querySelector('[data-shelf-status]');
+
+  if (!STORE_DOT_IDS.has(shelfCode)) {
+    if (status) {
+      status.textContent = 'Select a valid shelfcode from the map.';
+      status.className = 'shelfcode-editor__status shelfcode-editor__status--error';
+    }
+    return;
+  }
+
+  setField(product.sourceRow, CONFIG.shelfCodeField, ['shelf_code', 'shelf', 'shelf_location', 'store_location', 'location'], shelfCode);
+  product.shelfCode = shelfCode;
+  updateProductSearchText(product);
+  csvDirty = true;
+  els.downloadCsv.disabled = false;
+
+  updateShelfCodeEditorState(container, shelfCode);
+  renderSummary();
+  render();
+}
+
+function clearProductShelfCode(product, container) {
+  setField(product.sourceRow, CONFIG.shelfCodeField, ['shelf_code', 'shelf', 'shelf_location', 'store_location', 'location'], '');
+  product.shelfCode = '';
+  updateProductSearchText(product);
+  csvDirty = true;
+  els.downloadCsv.disabled = false;
+
+  updateShelfCodeEditorState(container, '');
+  renderSummary();
+  render();
+}
+
+function updateShelfCodeEditorState(container, shelfCode) {
+  if (!container) return;
+  const current = container.querySelector('[data-current-shelfcode]');
+  const status = container.querySelector('[data-shelf-status]');
+  const detailShelfCode = els.productDetails.querySelector('[data-detail-shelfcode]');
+  const normalized = normalizeShelfCode(shelfCode);
+
+  if (current) current.textContent = normalized || 'Not set';
+  if (detailShelfCode) detailShelfCode.textContent = normalized || 'Not set';
+  container.querySelectorAll('[data-shelf-dot]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.shelfDot === normalized);
+  });
+
+  if (status) {
+    status.textContent = normalized
+      ? `Shelfcode updated locally to ${normalized}. Download the updated CSV to keep it.`
+      : 'Shelfcode cleared locally. Download the updated CSV to keep it.';
+    status.className = 'shelfcode-editor__status shelfcode-editor__status--success';
+  }
+}
+
+function updateProductSearchText(product) {
+  product.searchText = [
+    product.name,
+    product.brand,
+    product.barcode,
+    product.barcodeAliases.join(' '),
+    product.category,
+    product.categories,
+    product.ingredients,
+    product.weight,
+    product.shelfCode
+  ]
+    .join(' ')
+    .toLocaleLowerCase(CONFIG.locale || undefined);
+}
+
+function setImageOrFallback(image, fallback, imageUrl, altText) {
+  if (!image) return;
+  const cleanUrl = String(imageUrl || '').trim();
+
+  if (!cleanUrl) {
+    image.hidden = true;
+    image.removeAttribute('src');
+    image.alt = '';
+    if (fallback) fallback.hidden = false;
+    return;
+  }
+
+  image.hidden = false;
+  image.src = cleanUrl;
+  image.alt = altText || 'Product image';
+  if (fallback) fallback.hidden = true;
+  image.onerror = () => {
+    image.onerror = null;
+    image.hidden = true;
+    image.removeAttribute('src');
+    if (fallback) fallback.hidden = false;
+  };
 }
 
 async function lookupBarcodeAndOpen(rawBarcode, options = {}) {
