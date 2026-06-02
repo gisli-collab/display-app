@@ -796,7 +796,7 @@ button.map-dot.active {
   }
 }
 
-/* display-app.v1.6 product detail layout */
+/* display-app.v1.7 product detail layout */
 .product-card.is-inactive {
   opacity: 0.68;
 }
@@ -1073,7 +1073,7 @@ button.map-dot.active.selected {
 }
 
 
-/* display-app.v1.6 product detail layout */
+/* display-app.v1.7 product detail layout */
 .product-dialog {
   width: min(1320px, calc(100% - 2rem));
   max-height: min(920px, calc(100dvh - 2rem));
@@ -1306,7 +1306,7 @@ button.map-dot.active.selected {
 }
 
 
-/* display-app.v1.6 open product layout */
+/* display-app.v1.7 open product layout */
 .product-dialog {
   width: min(1440px, calc(100% - 1rem));
   max-height: min(940px, calc(100dvh - 1rem));
@@ -1599,7 +1599,7 @@ button.map-dot.active.selected {
   }
 }
 
-/* display-app.v1.6 full-screen product detail view */
+/* display-app.v1.7 full-screen product detail view */
 .product-dialog {
   width: 100vw;
   max-width: none;
@@ -1654,7 +1654,7 @@ button.map-dot.active.selected {
   }
 }
 
-/* display-app.v1.6 product detail viewport fix
+/* display-app.v1.7 product detail viewport fix
    The product editor is a fixed full-screen overlay, not a native dialog.
    This prevents the editor from opening at the top of the underlying product grid scroll position. */
 html.product-overlay-open,
@@ -1733,4 +1733,13 @@ body.product-overlay-open {
     padding-right: 3rem;
     padding-left: 0.72rem;
   }
+}
+
+/* display-app.v1.7 BarcodeDetector camera scanner */
+.scanner-video {
+  display: block;
+  width: 100%;
+  max-height: min(62vh, 520px);
+  background: #0f172a;
+  object-fit: contain;
 }
