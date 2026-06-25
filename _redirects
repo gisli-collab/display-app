@@ -1,0 +1,2 @@
+/api/default-csv /.netlify/functions/default-csv 200
+/api/save-default-csv /.netlify/functions/save-default-csv 200

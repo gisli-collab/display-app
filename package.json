@@ -1,0 +1,13 @@
+{
+  "name": "kronan-display-app.v1.8",
+  "version": "1.8.0",
+  "private": true,
+  "description": "Static Netlify product display app with default CSV loading, Netlify Blob persistence for barcode, shelfcode, status and price edits, barcode lookup, and active-only CSV downloads.",
+  "scripts": {
+    "start": "npx serve .",
+    "build": "echo 'Static site; no build step required'"
+  },
+  "dependencies": {
+    "@netlify/blobs": "^9.1.0"
+  }
+}

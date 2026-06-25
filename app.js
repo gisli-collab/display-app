@@ -1,14 +1,17 @@
 const DEFAULT_CONFIG = {
-  storeName: 'Store Product Display',
-  dataSource: './api/products',
-  fallbackDataSource: './data/products.csv',
+  storeName: 'kronan-display-app.v1.8',
+  dataSource: '',
   currency: 'ISK',
   locale: 'is-IS',
   priceField: 'cost',
   imageField: 'img',
   barcodeField: 'barcodex',
-  sourceCodeField: 'source_code',
-  defaultSort: 'source-code-asc'
+  shelfCodeField: 'shelfcode',
+  statusField: 'status',
+  activeStatusValue: '1',
+  inactiveStatusValue: '2',
+  storeMapImage: 'store-map.png',
+  defaultSort: 'name-asc'
 };
 
 const CONFIG = {
@@ -16,13 +19,388 @@ const CONFIG = {
   ...(window.STORE_DISPLAY_CONFIG || {})
 };
 
+
+const STORE_DOTS = [
+  {
+    "id": "E500",
+    "x": 11.523,
+    "y": 4.362
+  },
+  {
+    "id": "E400",
+    "x": 35.889,
+    "y": 4.362
+  },
+  {
+    "id": "F100",
+    "x": 50.098,
+    "y": 4.362
+  },
+  {
+    "id": "F200",
+    "x": 68.555,
+    "y": 4.362
+  },
+  {
+    "id": "F300",
+    "x": 88.281,
+    "y": 4.557
+  },
+  {
+    "id": "F400",
+    "x": 97.363,
+    "y": 9.18
+  },
+  {
+    "id": "E300",
+    "x": 18.066,
+    "y": 14.648
+  },
+  {
+    "id": "F600",
+    "x": 68.066,
+    "y": 14.714
+  },
+  {
+    "id": "F700",
+    "x": 49.707,
+    "y": 14.779
+  },
+  {
+    "id": "F500",
+    "x": 86.328,
+    "y": 14.844
+  },
+  {
+    "id": "E200",
+    "x": 2.344,
+    "y": 19.141
+  },
+  {
+    "id": "L100",
+    "x": 97.461,
+    "y": 19.727
+  },
+  {
+    "id": "G100",
+    "x": 47.949,
+    "y": 20.117
+  },
+  {
+    "id": "H700",
+    "x": 58.398,
+    "y": 20.117
+  },
+  {
+    "id": "J700",
+    "x": 77.93,
+    "y": 20.117
+  },
+  {
+    "id": "K100",
+    "x": 87.598,
+    "y": 20.117
+  },
+  {
+    "id": "I100",
+    "x": 68.457,
+    "y": 20.182
+  },
+  {
+    "id": "D200",
+    "x": 36.133,
+    "y": 22.591
+  },
+  {
+    "id": "E100",
+    "x": 18.066,
+    "y": 24.089
+  },
+  {
+    "id": "G200",
+    "x": 48.047,
+    "y": 29.362
+  },
+  {
+    "id": "J600",
+    "x": 78.027,
+    "y": 29.395
+  },
+  {
+    "id": "H600",
+    "x": 58.594,
+    "y": 29.427
+  },
+  {
+    "id": "I200",
+    "x": 68.457,
+    "y": 29.427
+  },
+  {
+    "id": "L200",
+    "x": 97.363,
+    "y": 29.427
+  },
+  {
+    "id": "K200",
+    "x": 87.402,
+    "y": 29.492
+  },
+  {
+    "id": "C600",
+    "x": 17.773,
+    "y": 33.464
+  },
+  {
+    "id": "D100",
+    "x": 36.035,
+    "y": 36.654
+  },
+  {
+    "id": "C500",
+    "x": 2.051,
+    "y": 38.151
+  },
+  {
+    "id": "H500",
+    "x": 58.594,
+    "y": 39.714
+  },
+  {
+    "id": "G300",
+    "x": 48.096,
+    "y": 39.779
+  },
+  {
+    "id": "J500",
+    "x": 78.125,
+    "y": 39.779
+  },
+  {
+    "id": "I300",
+    "x": 68.457,
+    "y": 39.844
+  },
+  {
+    "id": "K300",
+    "x": 87.305,
+    "y": 39.844
+  },
+  {
+    "id": "L300",
+    "x": 97.363,
+    "y": 39.844
+  },
+  {
+    "id": "C400",
+    "x": 17.969,
+    "y": 42.969
+  },
+  {
+    "id": "B400",
+    "x": 36.23,
+    "y": 47.526
+  },
+  {
+    "id": "H400",
+    "x": 58.594,
+    "y": 47.656
+  },
+  {
+    "id": "J400",
+    "x": 78.076,
+    "y": 47.656
+  },
+  {
+    "id": "M100",
+    "x": 87.988,
+    "y": 47.656
+  },
+  {
+    "id": "L400",
+    "x": 97.266,
+    "y": 47.656
+  },
+  {
+    "id": "G400",
+    "x": 47.998,
+    "y": 47.721
+  },
+  {
+    "id": "I400",
+    "x": 68.652,
+    "y": 47.721
+  },
+  {
+    "id": "C300",
+    "x": 18.066,
+    "y": 51.562
+  },
+  {
+    "id": "C200",
+    "x": 2.051,
+    "y": 55.273
+  },
+  {
+    "id": "H300",
+    "x": 58.691,
+    "y": 57.552
+  },
+  {
+    "id": "G500",
+    "x": 48.047,
+    "y": 57.747
+  },
+  {
+    "id": "I500",
+    "x": 68.652,
+    "y": 57.878
+  },
+  {
+    "id": "J300",
+    "x": 78.125,
+    "y": 57.878
+  },
+  {
+    "id": "M200",
+    "x": 88.086,
+    "y": 57.878
+  },
+  {
+    "id": "L500",
+    "x": 97.266,
+    "y": 57.943
+  },
+  {
+    "id": "B300",
+    "x": 36.133,
+    "y": 58.203
+  },
+  {
+    "id": "C100",
+    "x": 17.871,
+    "y": 60.286
+  },
+  {
+    "id": "G600",
+    "x": 47.949,
+    "y": 65.234
+  },
+  {
+    "id": "H200",
+    "x": 58.594,
+    "y": 65.234
+  },
+  {
+    "id": "J200",
+    "x": 78.027,
+    "y": 65.234
+  },
+  {
+    "id": "M300",
+    "x": 88.086,
+    "y": 65.299
+  },
+  {
+    "id": "L600",
+    "x": 97.363,
+    "y": 65.299
+  },
+  {
+    "id": "I600",
+    "x": 68.555,
+    "y": 65.365
+  },
+  {
+    "id": "B200",
+    "x": 36.035,
+    "y": 65.755
+  },
+  {
+    "id": "A800",
+    "x": 18.066,
+    "y": 69.857
+  },
+  {
+    "id": "A700",
+    "x": 2.344,
+    "y": 74.023
+  },
+  {
+    "id": "H100",
+    "x": 58.594,
+    "y": 74.154
+  },
+  {
+    "id": "G700",
+    "x": 47.852,
+    "y": 74.219
+  },
+  {
+    "id": "M400",
+    "x": 87.988,
+    "y": 74.382
+  },
+  {
+    "id": "J100",
+    "x": 78.223,
+    "y": 74.479
+  },
+  {
+    "id": "I700",
+    "x": 68.555,
+    "y": 74.544
+  },
+  {
+    "id": "L700",
+    "x": 97.461,
+    "y": 74.577
+  },
+  {
+    "id": "B100",
+    "x": 35.84,
+    "y": 74.674
+  },
+  {
+    "id": "A600",
+    "x": 18.327,
+    "y": 78.733
+  },
+  {
+    "id": "A500",
+    "x": 35.547,
+    "y": 84.115
+  },
+  {
+    "id": "A400",
+    "x": 18.457,
+    "y": 88.086
+  },
+  {
+    "id": "A300",
+    "x": 2.637,
+    "y": 92.318
+  },
+  {
+    "id": "A200",
+    "x": 18.115,
+    "y": 96.615
+  },
+  {
+    "id": "A100",
+    "x": 35.449,
+    "y": 96.68
+  }
+];
+
+const STORE_DOT_IDS = new Set(STORE_DOTS.map((dot) => dot.id));
+
 const els = {
   storeName: document.querySelector('#store-name'),
   totalProducts: document.querySelector('#total-products'),
   totalCategories: document.querySelector('#total-categories'),
   averagePrice: document.querySelector('#average-price'),
   searchInput: document.querySelector('#search-input'),
-  refreshData: document.querySelector('#refresh-data'),
   categoryFilter: document.querySelector('#category-filter'),
   brandFilter: document.querySelector('#brand-filter'),
   sortSelect: document.querySelector('#sort-select'),
@@ -33,10 +411,20 @@ const els = {
   productGrid: document.querySelector('#product-grid'),
   emptyState: document.querySelector('#empty-state'),
   fileInput: document.querySelector('#csv-file-input'),
+  loadDefaultCsv: document.querySelector('#load-default-csv'),
+  saveDefaultCsv: document.querySelector('#save-default-csv'),
+  defaultCsvSaveStatus: document.querySelector('#default-csv-save-status'),
+  downloadCsv: document.querySelector('#download-csv'),
   dialog: document.querySelector('#product-dialog'),
   dialogClose: document.querySelector('#dialog-close'),
   productDetails: document.querySelector('#product-details'),
-  cardTemplate: document.querySelector('#product-card-template')
+  cardTemplate: document.querySelector('#product-card-template'),
+  barcodeLookup: document.querySelector('#barcode-lookup'),
+  lookupBarcode: document.querySelector('#lookup-barcode'),
+  startScanner: document.querySelector('#start-scanner'),
+  stopScanner: document.querySelector('#stop-scanner'),
+  scannerReader: document.querySelector('#scanner-reader'),
+  scannerStatus: document.querySelector('#scanner-status')
 };
 
 const collator = new Intl.Collator(CONFIG.locale || undefined, {
@@ -50,9 +438,46 @@ const priceFormatter = new Intl.NumberFormat(CONFIG.locale || undefined, {
   maximumFractionDigits: CONFIG.currency === 'ISK' ? 0 : 2
 });
 
+const DEFAULT_CSV_LOAD_ENDPOINTS = [
+  '/.netlify/functions/default-csv',
+  '/api/default-csv'
+];
+const DEFAULT_CSV_SAVE_ENDPOINTS = [
+  '/.netlify/functions/save-default-csv',
+  '/api/save-default-csv'
+];
+const DEFAULT_CSV_FALLBACK_PATHS = [
+  'default-products.csv',
+  './default-products.csv',
+  '/default-products.csv',
+  'data/default-products.csv',
+  './data/default-products.csv',
+  '/data/default-products.csv'
+];
+const DEFAULT_CSV_SOURCE_LABEL = 'default CSV';
+
 let products = [];
+let currentRows = [];
+let currentHeaders = [];
 let productRouteMap = new Map();
-let activeSourceName = CONFIG.dataSource;
+let productBarcodeMap = new Map();
+let activeSourceName = CONFIG.dataSource || 'No CSV loaded';
+let csvDirty = false;
+let defaultCsvMode = false;
+let defaultCsvSaveTimer = null;
+let defaultCsvSaveInFlight = false;
+let pendingDefaultCsvSave = false;
+let defaultCsvSaveState = '';
+let lastFocusedBeforeProduct = null;
+let barcodeDetectorConstructorPromise = null;
+let scannerSession = null;
+let scannerRunning = false;
+let lastScannerText = '';
+let lastScannerAt = 0;
+let addBarcodeScannerSession = null;
+let addBarcodeScannerRunning = false;
+let lastAddBarcodeText = '';
+let lastAddBarcodeAt = 0;
 
 init();
 
@@ -60,6 +485,7 @@ async function init() {
   els.storeName.textContent = CONFIG.storeName;
   applyDefaultSort();
   bindEvents();
+  resetSummary();
   await loadInitialData();
 }
 
@@ -69,7 +495,18 @@ function bindEvents() {
   els.brandFilter.addEventListener('change', render);
   els.sortSelect.addEventListener('change', render);
   els.clearFilters.addEventListener('click', clearFilters);
-  els.refreshData?.addEventListener('click', loadInitialData);
+  els.loadDefaultCsv?.addEventListener('click', loadDefaultCsv);
+  els.saveDefaultCsv?.addEventListener('click', () => saveDefaultCsvNow({ manual: true }));
+  els.downloadCsv.addEventListener('click', downloadCurrentCsv);
+  els.lookupBarcode.addEventListener('click', () => lookupBarcodeAndOpen(els.barcodeLookup.value, { fromScanner: false }));
+  els.barcodeLookup.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      lookupBarcodeAndOpen(els.barcodeLookup.value, { fromScanner: false });
+    }
+  });
+  els.startScanner.addEventListener('click', startBarcodeScanner);
+  els.stopScanner.addEventListener('click', stopBarcodeScanner);
 
   els.fileInput.addEventListener('change', async (event) => {
     const file = event.target.files?.[0];
@@ -77,21 +514,25 @@ function bindEvents() {
 
     try {
       const text = await file.text();
-      setProducts(parseCsv(text), file.name);
+      const parsed = parseCsvWithHeaders(text);
+      setProducts(parsed.rows, file.name, parsed.headers, { dirty: false, defaultCsv: false });
+      setDefaultCsvSaveStatus('Manual upload mode: edits stay local until you download the CSV.', '');
+      updateScannerStatus(`Loaded ${products.length} products from ${file.name}. Scan or enter a barcode. Upload edits stay local until downloaded.`);
     } catch (error) {
       showError(`Could not read CSV file: ${error.message}`);
     }
   });
 
-  els.dialogClose.addEventListener('click', () => els.dialog.close());
+  els.dialogClose.addEventListener('click', () => closeProductOverlay({ clearHash: true }));
   els.dialog.addEventListener('click', (event) => {
     if (event.target === els.dialog) {
-      els.dialog.close();
+      closeProductOverlay({ clearHash: true });
     }
   });
-  els.dialog.addEventListener('close', () => {
-    if (location.hash.startsWith('#/product/')) {
-      history.pushState('', document.title, `${location.pathname}${location.search}`);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && isProductOverlayOpen()) {
+      event.preventDefault();
+      closeProductOverlay({ clearHash: true });
     }
   });
 
@@ -99,58 +540,308 @@ function bindEvents() {
 }
 
 async function loadInitialData() {
-  const sources = [CONFIG.dataSource, CONFIG.fallbackDataSource].filter(Boolean);
+  if (!CONFIG.dataSource) {
+    setProducts([], 'No CSV loaded', [], { dirty: false });
+    els.resultCount.textContent = 'Load the default CSV or upload a CSV file to load products.';
+    els.dataSourceLabel.textContent = 'Source: no CSV loaded';
+    setDefaultCsvSaveStatus('Load the default CSV to enable shared saving.', '');
+    updateScannerStatus('Load the default CSV or upload a CSV file, then scan or enter a barcode.');
+    return;
+  }
+
+  try {
+    const response = await fetch(CONFIG.dataSource, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} while loading ${CONFIG.dataSource}`);
+    }
+
+    const text = await response.text();
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('json') || CONFIG.dataSource.toLowerCase().includes('.json');
+
+    if (isJson) {
+      const rows = normalizeJsonPayload(JSON.parse(text));
+      setProducts(rows, CONFIG.dataSource, collectHeaders(rows), { dirty: false });
+    } else {
+      const parsed = parseCsvWithHeaders(text);
+      setProducts(parsed.rows, CONFIG.dataSource, parsed.headers, { dirty: false });
+    }
+
+    updateScannerStatus(`Loaded ${products.length} products. Scan or enter a barcode.`);
+  } catch (error) {
+    showError(`Could not load product data. ${error.message}`);
+    updateScannerStatus('Could not load product data. Load the default CSV or upload a CSV file, then scan or enter a barcode.');
+  }
+}
+
+
+async function fetchDefaultCsvText() {
   const errors = [];
 
-  for (const source of sources) {
+  for (const endpoint of DEFAULT_CSV_LOAD_ENDPOINTS) {
     try {
-      const rows = await loadProductsFromSource(source);
-      setProducts(rows, source);
-      return;
+      const response = await fetch(endpoint, {
+        cache: 'no-store',
+        headers: { accept: 'text/csv,text/plain,*/*' }
+      });
+
+      if (response.ok) {
+        const text = await response.text();
+        if (!looksLikeHtml(text)) {
+          const source = response.headers.get('x-kronan-csv-source') || DEFAULT_CSV_SOURCE_LABEL;
+          const label = source === 'blob' ? 'saved default CSV' : 'bundled default CSV';
+          return { text, label, canSaveToBlob: true };
+        }
+        errors.push(`${endpoint}: returned HTML instead of CSV`);
+      } else {
+        errors.push(`${endpoint}: HTTP ${response.status}`);
+      }
     } catch (error) {
-      errors.push(`${source}: ${error.message}`);
+      errors.push(`${endpoint}: ${error.message}`);
     }
   }
 
-  showError(`Could not load product data. ${errors.join(' | ')}`);
-}
+  const fallbackUrls = uniqueDefaultCsvFallbackUrls();
+  for (const url of fallbackUrls) {
+    try {
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: { accept: 'text/csv,text/plain,*/*' }
+      });
 
-async function loadProductsFromSource(source) {
-  const response = await fetch(source, { cache: 'no-store' });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        errors.push(`${url}: HTTP ${response.status}`);
+        continue;
+      }
+
+      const text = await response.text();
+      if (looksLikeHtml(text)) {
+        errors.push(`${url}: returned HTML instead of CSV`);
+        continue;
+      }
+
+      return {
+        text,
+        label: 'bundled default CSV',
+        canSaveToBlob: true
+      };
+    } catch (error) {
+      errors.push(`${url}: ${error.message}`);
+    }
   }
 
-  const text = await response.text();
-  const contentType = response.headers.get('content-type') || '';
-  const isJson = contentType.includes('json') || source.toLowerCase().includes('.json');
-  return isJson ? normalizeJsonPayload(JSON.parse(text)) : parseCsv(text);
+  throw new Error(`Could not find the bundled CSV. Tried: ${errors.join('; ')}`);
 }
 
-function normalizeJsonPayload(payload) {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload.products)) return payload.products;
-  if (Array.isArray(payload.data)) return payload.data;
-  if (Array.isArray(payload.rows)) return payload.rows;
-  if (Array.isArray(payload.items)) return payload.items;
-  throw new Error('JSON must be an array, or an object with a products/data/rows/items array.');
+function uniqueDefaultCsvFallbackUrls() {
+  const urls = [];
+  const add = (value) => {
+    if (value && !urls.includes(value)) urls.push(value);
+  };
+
+  DEFAULT_CSV_FALLBACK_PATHS.forEach(add);
+
+  try {
+    add(new URL('default-products.csv', window.location.href).href);
+    add(new URL('data/default-products.csv', window.location.href).href);
+  } catch (error) {
+    // Ignore URL construction failures and keep the static candidates above.
+  }
+
+  try {
+    add(new URL('default-products.csv', document.baseURI).href);
+    add(new URL('data/default-products.csv', document.baseURI).href);
+  } catch (error) {
+    // Ignore URL construction failures and keep the static candidates above.
+  }
+
+  return urls;
 }
 
-function setProducts(rows, sourceName) {
+function looksLikeHtml(text) {
+  return /^\s*<!doctype html/i.test(text) || /^\s*<html[\s>]/i.test(text);
+}
+
+async function loadDefaultCsv() {
+  const button = els.loadDefaultCsv;
+  const originalText = button?.textContent || 'Load default CSV';
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Loading default CSV...';
+  }
+  updateScannerStatus('Loading default CSV from Netlify Blobs, with the bundled CSV as fallback...');
+
+  try {
+    const result = await fetchDefaultCsvText();
+    const parsed = parseCsvWithHeaders(result.text);
+    setProducts(parsed.rows, result.label, parsed.headers, { dirty: false, defaultCsv: result.canSaveToBlob });
+    setDefaultCsvSaveStatus('Default CSV loaded. Barcode, shelfcode, status, and price edits will save to Netlify Blobs.', 'success');
+    updateScannerStatus(`Loaded ${products.length} products from ${result.label}. Barcode, shelfcode, status, and price edits save to Netlify Blobs.`);
+  } catch (error) {
+    showError(`Could not load default CSV. ${error.message}`);
+    updateScannerStatus('Could not load the default CSV. You can still upload a CSV file manually.');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+}
+
+function markCsvEdited() {
+  csvDirty = true;
+  defaultCsvSaveState = defaultCsvMode ? 'saving' : '';
+  els.downloadCsv.disabled = false;
+  updateDataSourceLabel();
+
+  if (defaultCsvMode) {
+    setDefaultCsvSaveStatus('Saving default CSV to Netlify Blobs...', 'saving');
+  }
+
+  scheduleDefaultCsvSave();
+}
+
+function updateDataSourceLabel() {
+  let suffix = '';
+  if (csvDirty) suffix = defaultCsvMode ? ' (saving to Netlify Blobs)' : ' (edited locally)';
+  if (defaultCsvMode && defaultCsvSaveState === 'saved') suffix = ' (saved to Netlify Blobs)';
+  if (defaultCsvMode && defaultCsvSaveState === 'error') suffix = ' (save failed; use Save default CSV or download CSV)';
+  els.dataSourceLabel.textContent = `Source: ${activeSourceName}${suffix}`;
+
+  if (els.saveDefaultCsv) {
+    els.saveDefaultCsv.disabled = !defaultCsvMode || !currentRows.length || defaultCsvSaveInFlight;
+  }
+}
+
+function setDefaultCsvSaveStatus(message, state = '') {
+  if (!els.defaultCsvSaveStatus) return;
+  els.defaultCsvSaveStatus.textContent = message;
+  els.defaultCsvSaveStatus.className = `default-csv-save-status${state ? ` default-csv-save-status--${state}` : ''}`;
+}
+
+function scheduleDefaultCsvSave() {
+  if (!defaultCsvMode || !currentRows.length) return;
+  window.clearTimeout(defaultCsvSaveTimer);
+  defaultCsvSaveTimer = window.setTimeout(() => saveDefaultCsvNow({ manual: false }), 900);
+}
+
+function buildFullCsvForSaving() {
+  currentRows.forEach((row) => normalizeEmptyBarcodeField(row));
+  return serializeCsv(currentHeaders, currentRows);
+}
+
+
+async function postDefaultCsvToFirstAvailableEndpoint(csv) {
+  const errors = [];
+
+  for (const endpoint of DEFAULT_CSV_SAVE_ENDPOINTS) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'text/csv;charset=utf-8', accept: 'application/json,text/plain,*/*' },
+        body: csv
+      });
+
+      const responseText = await response.text().catch(() => '');
+      let payload = null;
+      try {
+        payload = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        payload = null;
+      }
+
+      if (response.ok && payload?.ok) {
+        return { endpoint, payload };
+      }
+
+      const message = payload?.error || payload?.details || responseText || `HTTP ${response.status}`;
+      errors.push(`${endpoint}: ${message}`);
+    } catch (error) {
+      errors.push(`${endpoint}: ${error.message || error}`);
+    }
+  }
+
+  throw new Error(`No save function responded. Tried ${errors.join('; ')}. Make sure netlify/functions/save-default-csv.js is deployed as a Netlify Function.`);
+}
+
+async function saveDefaultCsvNow(options = {}) {
+  const manual = Boolean(options.manual);
+
+  if (!defaultCsvMode || !currentRows.length) {
+    if (manual) setDefaultCsvSaveStatus('Load the default CSV before saving to Netlify Blobs.', 'error');
+    return;
+  }
+
+  if (defaultCsvSaveInFlight) {
+    pendingDefaultCsvSave = true;
+    if (manual) setDefaultCsvSaveStatus('A save is already running. The latest changes will save next.', 'saving');
+    return;
+  }
+
+  window.clearTimeout(defaultCsvSaveTimer);
+  defaultCsvSaveInFlight = true;
+  pendingDefaultCsvSave = false;
+  defaultCsvSaveState = 'saving';
+  setDefaultCsvSaveStatus('Saving barcode, shelfcode, status, and price changes to Netlify Blobs...', 'saving');
+  updateDataSourceLabel();
+
+  try {
+    const csv = buildFullCsvForSaving();
+    const { payload } = await postDefaultCsvToFirstAvailableEndpoint(csv);
+
+    csvDirty = false;
+    defaultCsvSaveState = 'saved';
+    const productCount = payload.rows || currentRows.length;
+    const savedAt = payload.savedAt ? new Date(payload.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'now';
+    setDefaultCsvSaveStatus(`Saved ${productCount} default CSV rows to Netlify Blobs at ${savedAt}.`, 'success');
+    updateDataSourceLabel();
+  } catch (error) {
+    defaultCsvSaveState = 'error';
+    updateDataSourceLabel();
+    setDefaultCsvSaveStatus(`Save failed: ${error.message || error}. Download the CSV as backup.`, 'error');
+    console.error('Could not save default CSV to Netlify Blobs:', error);
+  } finally {
+    defaultCsvSaveInFlight = false;
+    updateDataSourceLabel();
+    if (pendingDefaultCsvSave) saveDefaultCsvNow({ manual: false });
+  }
+}
+
+function setProducts(rows, sourceName, headers = [], options = {}) {
   activeSourceName = sourceName;
-  products = rows
+  defaultCsvMode = Boolean(options.defaultCsv);
+  defaultCsvSaveState = '';
+  currentRows = rows.map((row) => ({ ...(row && typeof row === 'object' ? row : { value: row }) }));
+  currentHeaders = normalizeHeaders(headers.length ? headers : collectHeaders(currentRows));
+  currentRows.forEach((row) => normalizeEmptyBarcodeField(row));
+
+  products = currentRows
     .map((row, index) => normalizeProduct(row, index))
     .filter((product) => product.name);
 
   productRouteMap = new Map();
+  productBarcodeMap = new Map();
+
   products.forEach((product) => {
     if (!productRouteMap.has(product.routeKey)) {
       productRouteMap.set(product.routeKey, product);
     }
-    if (product.barcode && !productRouteMap.has(product.barcode.toLowerCase())) {
-      productRouteMap.set(product.barcode.toLowerCase(), product);
-    }
+
+    product.barcodeAliases.forEach((alias) => {
+      const key = alias.toLowerCase();
+      if (!productBarcodeMap.has(key)) productBarcodeMap.set(key, product);
+      if (!productRouteMap.has(key)) productRouteMap.set(key, product);
+    });
   });
+
+  csvDirty = Boolean(options.dirty);
+  els.downloadCsv.disabled = products.length === 0;
+  if (els.saveDefaultCsv) els.saveDefaultCsv.disabled = !defaultCsvMode || products.length === 0;
+  if (!defaultCsvMode && products.length) {
+    setDefaultCsvSaveStatus('Manual upload mode: edits stay local until you download the CSV.', '');
+  }
+  updateDataSourceLabel();
 
   buildFilterOptions();
   renderSummary();
@@ -158,7 +849,7 @@ function setProducts(rows, sourceName) {
   openProductFromHash();
 }
 
-function parseCsv(text) {
+function parseCsvWithHeaders(text) {
   const cleanText = String(text || '').replace(/^\uFEFF/, '');
   const table = [];
   let row = [];
@@ -191,35 +882,68 @@ function parseCsv(text) {
   row.push(field);
   if (row.some((value) => value.trim() !== '')) table.push(row);
 
-  if (table.length < 2) return [];
+  if (table.length < 1) return { headers: [], rows: [] };
 
   const headers = table[0].map((header) => cleanHeader(header));
-  return table.slice(1).map((values) => {
+  const rows = table.slice(1).map((values) => {
     const item = {};
     headers.forEach((header, index) => {
       item[header] = values[index] ?? '';
     });
     return item;
   });
+
+  return { headers, rows };
 }
 
 function cleanHeader(value) {
   return String(value || '').replace(/^\uFEFF/, '').trim();
 }
 
+function normalizeHeaders(headers) {
+  const cleaned = uniqueStrings(headers.map(cleanHeader));
+  const required = [CONFIG.priceField, CONFIG.barcodeField, CONFIG.imageField, CONFIG.shelfCodeField, CONFIG.statusField, 'name', 'weight', 'brand'];
+  required.forEach((header) => {
+    if (header && !cleaned.some((existing) => existing.toLowerCase() === String(header).toLowerCase())) {
+      cleaned.push(header);
+    }
+  });
+  return cleaned;
+}
+
+function collectHeaders(rows) {
+  const headers = [];
+  rows.forEach((row) => {
+    Object.keys(row || {}).forEach((key) => {
+      if (!headers.some((header) => header.toLowerCase() === key.toLowerCase())) {
+        headers.push(key);
+      }
+    });
+  });
+  return headers;
+}
+
 function normalizeProduct(row, index) {
-  const name = getField(row, ['name', 'product_name', 'title']);
-  const brand = getField(row, ['brand', 'manufacturer']) || 'No brand';
-  const barcode = getField(row, [CONFIG.barcodeField, 'barcode', 'gtin', 'ean', 'sku']);
-  const sourceCode = getSourceCode(row);
-  const costRaw = getField(row, [CONFIG.priceField, 'price', 'regular_price']);
+  const sourceRow = row && typeof row === 'object' ? row : { value: row };
+  const name = getField(sourceRow, ['name', 'product_name', 'title']);
+  const brand = getField(sourceRow, ['brand', 'manufacturer']) || 'No brand';
+  normalizeEmptyBarcodeField(sourceRow);
+  const barcodeValues = collectBarcodeValues(sourceRow);
+  const barcode = barcodeValues[0] || '';
+  const barcodeAliases = buildBarcodeAliases(barcodeValues);
+  const costRaw = getField(sourceRow, [CONFIG.priceField, 'price', 'regular_price']);
   const price = parsePrice(costRaw);
-  const category = getField(row, ['store_categories', 'store_category', 'category']) || 'Uncategorized';
-  const categories = getField(row, ['categories', 'category_path']);
-  const ingredients = getField(row, ['ingredients', 'description']);
-  const weight = getField(row, ['weight', 'package_weight', 'size']);
-  const status = getField(row, ['status']);
-  const imageUrl = normalizeImageUrl(getField(row, [CONFIG.imageField, 'image', 'image_url', 'img_url']));
+  const category = getField(sourceRow, ['store_categories', 'store_category', 'category']) || 'Uncategorized';
+  const categories = getField(sourceRow, ['categories', 'category_path']);
+  const ingredients = getField(sourceRow, ['ingredients', 'description']);
+  const weight = getField(sourceRow, ['weight', 'package_weight', 'size']);
+  const rawStatus = getField(sourceRow, [CONFIG.statusField, 'status']);
+  const status = normalizeStatusCode(rawStatus);
+  if (!rawStatus.trim()) {
+    setField(sourceRow, CONFIG.statusField, ['status'], status);
+  }
+  const shelfCode = normalizeShelfCode(getField(sourceRow, [CONFIG.shelfCodeField, 'shelf_code', 'shelf', 'shelf_location', 'store_location', 'location']));
+  const imageUrl = normalizeImageUrl(getField(sourceRow, [CONFIG.imageField, 'image', 'image_url', 'img_url']));
   const idBase = barcode || `${name}-${index + 1}`;
   const routeKey = slugify(idBase || `product-${index + 1}`);
 
@@ -227,11 +951,12 @@ function normalizeProduct(row, index) {
     id: `${routeKey}-${index + 1}`,
     routeKey,
     rowNumber: index + 2,
-    sourceRow: row,
+    rowIndex: index,
+    sourceRow,
     name: name.trim(),
     brand: brand.trim(),
     barcode: barcode.trim(),
-    sourceCode: sourceCode.trim(),
+    barcodeAliases,
     price,
     priceRaw: costRaw.trim(),
     category: category.trim(),
@@ -239,31 +964,119 @@ function normalizeProduct(row, index) {
     ingredients: ingredients.trim(),
     weight: weight.trim(),
     status: status.trim(),
+    shelfCode,
     imageUrl,
-    searchText: [name, brand, barcode, sourceCode, category, categories, ingredients, weight]
+    searchText: [name, brand, barcode, barcodeAliases.join(' '), category, categories, ingredients, weight, shelfCode, status, getStatusLabel(status)]
       .join(' ')
       .toLocaleLowerCase(CONFIG.locale || undefined)
   };
 }
 
-function getSourceCode(row) {
-  const direct = getField(row, [
-    CONFIG.sourceCodeField,
-    'source_code',
-    'source code',
-    'sourceCode',
-    'source',
-    'store_source_code',
-    'inventory_source_code'
-  ]);
-  if (direct) return direct;
 
-  const sourceLikeKey = Object.keys(row).find((key) => normalizeKey(key).includes('sourcecode'));
-  return sourceLikeKey ? String(row[sourceLikeKey] || '') : '';
+function getBarcodeFieldKeys() {
+  return uniqueStrings([
+    CONFIG.barcodeField,
+    'barcodex',
+    'barcode',
+    'barcode_number',
+    'product_barcode',
+    'gtin',
+    'gtin14',
+    'ean',
+    'ean13',
+    'upc',
+    'sku'
+  ].filter(Boolean));
+}
+
+function normalizeEmptyBarcodeField(row) {
+  if (!row || typeof row !== 'object') return;
+
+  const keys = getBarcodeFieldKeys();
+  const rowKeys = Object.keys(row);
+  const existingBarcodeKey = keys
+    .map((key) => rowKeys.find((rowKey) => rowKey.toLowerCase() === String(key).toLowerCase()))
+    .find(Boolean);
+
+  const targetKey = existingBarcodeKey || CONFIG.barcodeField || 'barcodex';
+  const currentValue = row[targetKey];
+
+  if (currentValue === undefined || currentValue === null || String(currentValue).trim() === '') {
+    row[targetKey] = 'null';
+  }
+
+  if (!currentHeaders.some((header) => header.toLowerCase() === targetKey.toLowerCase())) {
+    currentHeaders.push(targetKey);
+  }
+}
+
+function collectBarcodeValues(row) {
+  const candidateKeys = getBarcodeFieldKeys();
+
+  const values = [];
+  candidateKeys.forEach((key) => {
+    const value = getField(row, [key]);
+    if (value && !isNullBarcodeValue(value)) values.push(value);
+  });
+
+  Object.keys(row).forEach((key) => {
+    const normalized = normalizeKey(key);
+    const looksLikeBarcode = normalized.includes('barcode') || normalized === 'gtin' || normalized === 'ean' || normalized === 'ean13';
+    if (looksLikeBarcode && row[key] !== undefined && row[key] !== null && !isNullBarcodeValue(row[key])) {
+      values.push(String(row[key]));
+    }
+  });
+
+  return uniqueStrings(values);
+}
+
+function buildBarcodeAliases(values) {
+  const list = Array.isArray(values) ? values : [values];
+  const aliases = new Set();
+
+  list.forEach((value) => {
+    addBarcodeAliasVariants(value, aliases);
+
+    const parsed = parseBarcodeForProductLookup(value);
+    addBarcodeAliasVariants(parsed.original_barcode, aliases);
+    addBarcodeAliasVariants(parsed.barcode, aliases);
+    if (parsed.gs1_ai_01) addBarcodeAliasVariants(parsed.gs1_ai_01, aliases);
+  });
+
+  return [...aliases].filter(Boolean);
+}
+
+function addBarcodeAliasVariants(value, aliases) {
+  const text = normalizeScannedText(value);
+  const compact = getCompactDigits(text);
+  const alnum = text.replace(/[^0-9A-Za-z]/g, '');
+
+  [text, compact, alnum].forEach((candidate) => {
+    const clean = String(candidate || '').trim();
+    if (clean) aliases.add(clean.toLowerCase());
+  });
+
+  if (/^\d{14}$/.test(compact) && compact.startsWith('0')) {
+    aliases.add(compact.slice(1));
+  }
+
+  if (/^\d{13}$/.test(compact)) {
+    aliases.add(`0${compact}`);
+  }
+
+  if (/^\d{12}$/.test(compact)) {
+    aliases.add(`0${compact}`);
+    aliases.add(`00${compact}`);
+  }
 }
 
 function normalizeKey(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function isNullBarcodeValue(value) {
+  const text = String(value ?? '').trim().toLowerCase();
+  return text === '' || text === 'null' || text === 'none' || text === 'no barcode';
 }
 
 function getField(row, keys) {
@@ -281,6 +1094,18 @@ function getField(row, keys) {
   return '';
 }
 
+function setField(row, preferredKey, fallbackKeys, value) {
+  const keys = [preferredKey, ...(fallbackKeys || [])].filter(Boolean);
+  const foundKey = keys
+    .map((key) => Object.keys(row).find((rowKey) => rowKey.toLowerCase() === String(key).toLowerCase()))
+    .find(Boolean);
+  const targetKey = foundKey || preferredKey || 'price';
+  row[targetKey] = value;
+  if (!currentHeaders.some((header) => header.toLowerCase() === targetKey.toLowerCase())) {
+    currentHeaders.push(targetKey);
+  }
+}
+
 function parsePrice(value) {
   const cleaned = String(value || '')
     .replace(/[^0-9,.-]/g, '')
@@ -289,9 +1114,14 @@ function parsePrice(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function formatPriceForCsv(value) {
+  if (!Number.isFinite(value)) return '';
+  return CONFIG.currency === 'ISK' ? String(Math.round(value)) : String(value.toFixed(2));
+}
+
 function normalizeImageUrl(value) {
   const url = String(value || '').trim();
-  if (!url) return 'assets/placeholder.svg';
+  if (!url) return '';
   return url.replace(/^http:\/\//i, 'https://');
 }
 
@@ -350,6 +1180,13 @@ function createChip(label, value, count) {
   return chip;
 }
 
+function resetSummary() {
+  els.totalProducts.textContent = '0';
+  els.totalCategories.textContent = '0';
+  els.averagePrice.textContent = '-';
+  els.dataSourceLabel.textContent = 'Source: no CSV loaded';
+}
+
 function renderSummary() {
   const categories = new Set(products.map((product) => product.category).filter(Boolean));
   const validPrices = products.map((product) => product.price).filter((price) => Number.isFinite(price) && price > 0);
@@ -359,8 +1196,8 @@ function renderSummary() {
 
   els.totalProducts.textContent = String(products.length);
   els.totalCategories.textContent = String(categories.size);
-  els.averagePrice.textContent = average === null ? '—' : formatPrice(average);
-  els.dataSourceLabel.textContent = `Source: ${activeSourceName}`;
+  els.averagePrice.textContent = average === null ? '-' : formatPrice(average);
+  updateDataSourceLabel();
 }
 
 function render() {
@@ -394,10 +1231,6 @@ function getFilteredProducts() {
 
 function compareProducts(a, b, sortValue) {
   switch (sortValue) {
-    case 'source-code-asc':
-      return compareTextWithMissingLast(a.sourceCode, b.sourceCode, 'asc') || collator.compare(a.name, b.name);
-    case 'source-code-desc':
-      return compareTextWithMissingLast(a.sourceCode, b.sourceCode, 'desc') || collator.compare(a.name, b.name);
     case 'price-asc':
       return comparePrices(a, b, 'asc') || collator.compare(a.name, b.name);
     case 'price-desc':
@@ -406,25 +1239,12 @@ function compareProducts(a, b, sortValue) {
       return collator.compare(a.brand, b.brand) || collator.compare(a.name, b.name);
     case 'category-asc':
       return collator.compare(a.category, b.category) || collator.compare(a.name, b.name);
+    case 'shelfcode-asc':
+      return compareOptionalText(a.shelfCode, b.shelfCode) || collator.compare(a.name, b.name);
     case 'name-asc':
-      return collator.compare(a.name, b.name);
     default:
-      return compareTextWithMissingLast(a.sourceCode, b.sourceCode, 'asc') || collator.compare(a.name, b.name);
+      return collator.compare(a.name, b.name);
   }
-}
-
-function compareTextWithMissingLast(aValue, bValue, direction = 'asc') {
-  const aText = String(aValue || '').trim();
-  const bText = String(bValue || '').trim();
-  const aMissing = aText === '';
-  const bMissing = bText === '';
-
-  if (aMissing && bMissing) return 0;
-  if (aMissing) return 1;
-  if (bMissing) return -1;
-
-  const result = collator.compare(aText, bText);
-  return direction === 'desc' ? -result : result;
 }
 
 function comparePrices(a, b, direction) {
@@ -433,27 +1253,33 @@ function comparePrices(a, b, direction) {
   return direction === 'asc' ? aPrice - bPrice : bPrice - aPrice;
 }
 
+function compareOptionalText(aValue, bValue) {
+  const aText = String(aValue || '').trim();
+  const bText = String(bValue || '').trim();
+  if (aText && !bText) return -1;
+  if (!aText && bText) return 1;
+  return collator.compare(aText, bText);
+}
+
 function renderProductCard(product) {
   const fragment = els.cardTemplate.content.cloneNode(true);
   const card = fragment.querySelector('.product-card');
   const link = fragment.querySelector('.product-card__image-link');
   const image = fragment.querySelector('.product-card__image');
+  const imageFallback = fragment.querySelector('.product-card__image-fallback');
   const category = fragment.querySelector('.product-card__category');
   const barcode = fragment.querySelector('.product-card__barcode');
   const name = fragment.querySelector('.product-card__name');
   const brand = fragment.querySelector('.product-card__brand');
   const price = fragment.querySelector('.product-card__price');
   const weight = fragment.querySelector('.product-card__weight');
+  const shelfCode = fragment.querySelector('.product-card__shelfcode');
   const button = fragment.querySelector('.product-card__button');
 
   const productUrl = `#/product/${encodeURIComponent(product.routeKey)}`;
+  card.classList.toggle('is-inactive', !isProductActive(product));
   link.href = productUrl;
-  image.src = product.imageUrl;
-  image.alt = `${product.name} product image`;
-  image.onerror = () => {
-    image.onerror = null;
-    image.src = 'assets/placeholder.svg';
-  };
+  setImageOrFallback(image, imageFallback, product.imageUrl, `${product.name} product image`);
   category.textContent = product.category || 'Uncategorized';
   barcode.textContent = product.barcode ? `#${product.barcode}` : `Row ${product.rowNumber}`;
   name.textContent = product.name;
@@ -461,6 +1287,8 @@ function renderProductCard(product) {
   price.textContent = formatPriceLabel(product.price);
   price.classList.toggle('is-missing', !hasValidPrice(product));
   weight.textContent = product.weight || 'No weight';
+  shelfCode.textContent = `${product.shelfCode ? `Shelf ${product.shelfCode}` : 'Shelf not set'} · ${getStatusLabel(product.status)}`;
+  shelfCode.classList.toggle('is-inactive', !isProductActive(product));
 
   link.addEventListener('click', (event) => {
     event.preventDefault();
@@ -491,13 +1319,93 @@ function navigateToProduct(product) {
 }
 
 function openProductFromHash() {
-  if (!location.hash.startsWith('#/product/')) return;
+  if (!location.hash.startsWith('#/product/')) {
+    if (isProductOverlayOpen()) {
+      closeProductOverlay({ clearHash: false });
+    }
+    return;
+  }
+
   const rawKey = location.hash.replace('#/product/', '');
   const key = decodeURIComponent(rawKey).toLowerCase();
   const product = productRouteMap.get(key);
 
   if (product) {
     openProduct(product);
+  } else if (isProductOverlayOpen()) {
+    closeProductOverlay({ clearHash: false });
+  }
+}
+
+function isProductOverlayOpen() {
+  return Boolean(els.dialog && !els.dialog.hidden);
+}
+
+function openProductOverlay() {
+  if (!els.dialog) return;
+
+  if (els.dialog.hidden) {
+    lastFocusedBeforeProduct = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  }
+
+  els.dialog.hidden = false;
+  els.dialog.classList.add('is-open');
+  els.dialog.setAttribute('aria-hidden', 'false');
+  document.documentElement.classList.add('product-overlay-open');
+  document.body.classList.add('product-overlay-open');
+}
+
+function closeProductOverlay({ clearHash = false } = {}) {
+  if (!els.dialog || els.dialog.hidden) return;
+
+  stopAddBarcodeScanner();
+
+  els.dialog.classList.remove('is-open');
+  els.dialog.hidden = true;
+  els.dialog.setAttribute('aria-hidden', 'true');
+  document.documentElement.classList.remove('product-overlay-open');
+  document.body.classList.remove('product-overlay-open');
+
+  if (clearHash && location.hash.startsWith('#/product/')) {
+    history.pushState('', document.title, `${location.pathname}${location.search}`);
+  }
+
+  if (lastFocusedBeforeProduct && typeof lastFocusedBeforeProduct.focus === 'function') {
+    try {
+      lastFocusedBeforeProduct.focus({ preventScroll: true });
+    } catch (error) {
+      lastFocusedBeforeProduct.focus();
+    }
+  }
+
+  lastFocusedBeforeProduct = null;
+}
+
+function resetProductDialogScroll() {
+  if (!els.dialog) return;
+
+  els.dialog.scrollTop = 0;
+  els.dialog.scrollLeft = 0;
+
+  if (typeof els.dialog.scrollTo === 'function') {
+    try {
+      els.dialog.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    } catch (error) {
+      els.dialog.scrollTo(0, 0);
+    }
+  }
+
+  if (els.productDetails) {
+    els.productDetails.scrollTop = 0;
+    els.productDetails.scrollLeft = 0;
+
+    if (typeof els.productDetails.scrollTo === 'function') {
+      try {
+        els.productDetails.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } catch (error) {
+        els.productDetails.scrollTo(0, 0);
+      }
+    }
   }
 }
 
@@ -505,13 +1413,21 @@ function openProduct(product) {
   els.productDetails.innerHTML = renderProductDetails(product);
 
   const detailImage = els.productDetails.querySelector('.product-details__image');
-  detailImage.onerror = () => {
-    detailImage.onerror = null;
-    detailImage.src = 'assets/placeholder.svg';
-  };
+  const detailFallback = els.productDetails.querySelector('.product-details__image-fallback');
+  setImageOrFallback(detailImage, detailFallback, product.imageUrl, `${product.name} product image`);
 
   const copyBarcodeButton = els.productDetails.querySelector('[data-action="copy-barcode"]');
   const copyLinkButton = els.productDetails.querySelector('[data-action="copy-link"]');
+  const shelfMap = els.productDetails.querySelector('[data-shelf-map]');
+  const shelfForm = els.productDetails.querySelector('[data-shelf-form]');
+  const clearShelfCodeButton = els.productDetails.querySelector('[data-action="clear-shelfcode"]');
+  const barcodeForm = els.productDetails.querySelector('[data-barcode-form]');
+  const startAddBarcodeButton = els.productDetails.querySelector('[data-action="start-add-barcode-scanner"]');
+  const stopAddBarcodeButton = els.productDetails.querySelector('[data-action="stop-add-barcode-scanner"]');
+  const noBarcodeButton = els.productDetails.querySelector('[data-action="no-barcode"]');
+  const nextProductButton = els.productDetails.querySelector('[data-action="next-product"]');
+  const productNotFoundButton = els.productDetails.querySelector('[data-action="product-not-found"]');
+  setupStoreMapImage(shelfMap);
 
   copyBarcodeButton?.addEventListener('click', async () => {
     await copyText(product.barcode || product.name, copyBarcodeButton, 'Copied barcode');
@@ -522,33 +1438,161 @@ function openProduct(product) {
     await copyText(url, copyLinkButton, 'Copied link');
   });
 
-  if (!els.dialog.open) {
-    els.dialog.showModal();
-  }
+
+  shelfMap?.querySelectorAll('[data-shelf-dot]').forEach((button) => {
+    button.addEventListener('click', () => selectShelfCodeOnMap(button.dataset.shelfDot, shelfMap));
+  });
+
+  shelfForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    saveProductShelfCode(product, shelfMap?.dataset.pendingShelfcode || '', shelfMap);
+  });
+
+  clearShelfCodeButton?.addEventListener('click', () => clearProductShelfCode(product, shelfMap));
+
+  barcodeForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    saveProductBarcode(product, barcodeForm);
+  });
+
+  startAddBarcodeButton?.addEventListener('click', () => startAddBarcodeScanner(product, barcodeForm));
+  stopAddBarcodeButton?.addEventListener('click', () => stopAddBarcodeScanner(barcodeForm));
+
+  noBarcodeButton?.addEventListener('click', (event) => {
+    event.preventDefault();
+    markProductAsNoBarcode(product, barcodeForm);
+  });
+
+  nextProductButton?.addEventListener('click', () => activateProductAndOpenNext(product));
+  productNotFoundButton?.addEventListener('click', () => openNextProductWithoutChanges(product));
+
+  openProductOverlay();
+  resetProductDialogScroll();
+  requestAnimationFrame(() => {
+    resetProductDialogScroll();
+    els.dialogClose?.focus({ preventScroll: true });
+    setTimeout(resetProductDialogScroll, 0);
+  });
 }
 
 function renderProductDetails(product) {
   const productLink = `#/product/${encodeURIComponent(product.routeKey)}`;
   const ingredients = product.ingredients || 'No ingredients text in the data yet.';
   const fullCategory = product.categories || product.category || 'No category path';
+  const active = isProductActive(product);
+  const statusDisplay = getStatusDisplay(product.status);
+  const imageMarkup = `
+    <img class="product-details__image" alt="${escapeAttribute(product.name)} product image" />
+    <div class="product-details__image-fallback" hidden>No image</div>
+  `;
 
   return `
-    <div>
-      <img class="product-details__image" src="${escapeAttribute(product.imageUrl)}" alt="${escapeAttribute(product.name)} product image" />
-    </div>
-    <div class="product-details__content">
-      <span class="badge">${escapeHtml(product.category || 'Uncategorized')}</span>
-      <h2>${escapeHtml(product.name)}</h2>
-      <p class="product-card__brand">${escapeHtml(product.brand)}</p>
-      <div class="detail-price ${hasValidPrice(product) ? '' : 'product-card__price is-missing'}">${escapeHtml(formatPriceLabel(product.price))}</div>
+    <section class="product-detail-main" aria-label="Main product details">
+      <header class="product-detail-hero-header">
+        <div class="product-detail-title">
+          <span class="badge">${escapeHtml(product.category || 'Uncategorized')}</span>
+          <h2 class="product-detail-name">${escapeHtml(product.name)}</h2>
+          <p class="product-detail-brand">${escapeHtml(product.brand || 'No brand')}</p>
+        </div>
+        <span class="status-pill ${active ? 'status-pill--active' : 'status-pill--inactive'}" data-status-pill>${escapeHtml(statusDisplay)}</span>
+      </header>
+
+      <div class="detail-price ${hasValidPrice(product) ? '' : 'product-card__price is-missing'}" data-current-price>
+        ${escapeHtml(formatPriceLabel(product.price))}
+      </div>
+
+      <div class="product-detail-photo-frame">
+        ${imageMarkup}
+      </div>
+    </section>
+
+    <aside class="product-detail-actions" aria-label="Product actions">
+      <div class="actions-stack">
+        <section class="shelfcode-editor edit-card action-card" data-shelf-map data-current-shelfcode-value="${escapeAttribute(product.shelfCode || '')}" data-pending-shelfcode="${escapeAttribute(product.shelfCode || '')}">
+          <div class="shelfcode-editor__header edit-card__header">
+            <span class="action-number">1</span>
+            <div>
+              <strong>Map / shelfcode</strong>
+              <p>Current shelfcode: <span data-current-shelfcode>${escapeHtml(product.shelfCode || 'Not set')}</span></p>
+              <p>Selected on map: <span data-selected-shelfcode>${escapeHtml(product.shelfCode || 'None selected')}</span></p>
+            </div>
+          </div>
+          <div class="store-map" role="application" aria-label="Store shelfcode map">
+            <img class="store-map__image" data-store-map-image alt="Store shelfcode map" />
+            ${renderShelfCodeDots(product.shelfCode, product.shelfCode)}
+          </div>
+          <form class="shelfcode-actions" data-shelf-form>
+            <button class="button" type="submit">Update shelfcode locally</button>
+            <button class="button button--secondary" type="button" data-action="clear-shelfcode">Clear shelfcode locally</button>
+          </form>
+          <small class="shelfcode-editor__status" data-shelf-status>Tap a red dot, then click Update shelfcode locally.</small>
+        </section>
+
+        <form class="barcode-editor edit-card action-card" data-barcode-form>
+          <div class="edit-card__header">
+            <span class="action-number">2</span>
+            <div>
+              <strong>Add barcode</strong>
+              <p>Current barcode: <span data-current-barcode>${escapeHtml(product.barcode || 'Not set')}</span></p>
+            </div>
+          </div>
+          <label>
+            <span>Barcode / GTIN</span>
+            <input name="barcode" type="text" inputmode="numeric" autocomplete="off" value="${escapeAttribute(product.barcode || '')}" placeholder="Scan or enter barcode" />
+          </label>
+          <div class="barcode-editor__actions">
+            <button class="button" type="button" data-action="start-add-barcode-scanner">Scan barcode</button>
+            <button class="button button--secondary" type="button" data-action="stop-add-barcode-scanner" disabled>Stop scan</button>
+            <button class="button button--secondary" type="button" data-action="no-barcode">No barcode</button>
+            <button class="button" type="submit">Save barcode locally</button>
+          </div>
+          <div id="add-barcode-scanner-reader" class="scanner-reader barcode-editor__reader" hidden></div>
+          <small class="barcode-editor__status" data-barcode-status>Scan or type a barcode, then save locally. Use No barcode for products like bananas. Download the updated CSV to keep the change.</small>
+        </form>
+
+        <section class="next-product-editor edit-card action-card" data-next-product-editor>
+          <div class="edit-card__header">
+            <span class="action-number">3</span>
+            <div>
+              <strong>Next product</strong>
+              <p>Marks this product active with status ${escapeHtml(String(CONFIG.activeStatusValue || '1'))}, then opens the next product on the page.</p>
+            </div>
+          </div>
+          <div class="next-product-editor__actions">
+            <button class="button button--success" type="button" data-action="next-product">Next product</button>
+            <button class="button button--secondary" type="button" data-action="product-not-found">Product not found</button>
+          </div>
+          <small class="status-message" data-next-product-status>Blank CSV statuses default to ${escapeHtml(String(CONFIG.inactiveStatusValue || '2'))}. Next product activates this item. Product not found skips ahead without changing anything.</small>
+        </section>
+      </div>
+    </aside>
+
+    <section class="product-detail-info" aria-label="Product information">
+      <div class="info-section-header">
+        <span class="eyebrow eyebrow--dark">Product information</span>
+        <h3>Info</h3>
+      </div>
 
       <div class="detail-grid">
-        ${detailItem('Weight', product.weight || 'No weight')}
-        ${detailItem('Barcode / GTIN', product.barcode || 'No barcode')}
-        ${detailItem('Source code', product.sourceCode || 'No source code')}
+        <div class="detail-item">
+          <span class="detail-label">Status</span>
+          <span data-detail-status>${escapeHtml(statusDisplay)}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Weight</span>
+          <span>${escapeHtml(product.weight || 'No weight')}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Shelfcode</span>
+          <span data-detail-shelfcode>${escapeHtml(product.shelfCode || 'Not set')}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Barcode / GTIN</span>
+          <span data-detail-barcode>${escapeHtml(product.barcode || 'No barcode')}</span>
+        </div>
+        ${detailItem('Brand', product.brand || 'No brand')}
         ${detailItem('Store category', product.category || 'Uncategorized')}
-        ${detailItem('Status', product.status || 'No status')}
-        ${detailItem('Source row', String(product.rowNumber))}
+        ${detailItem('CSV row', String(product.rowNumber))}
         ${detailItem('Product link', productLink)}
       </div>
 
@@ -566,7 +1610,7 @@ function renderProductDetails(product) {
         <button class="button" type="button" data-action="copy-barcode">Copy barcode</button>
         <button class="button button--secondary" type="button" data-action="copy-link">Copy product link</button>
       </div>
-    </div>
+    </section>
   `;
 }
 
@@ -579,6 +1623,948 @@ function detailItem(label, value) {
   `;
 }
 
+function saveProductPrice(product, form) {
+  const input = form.elements.price;
+  const status = form.querySelector('[data-price-status]');
+  const parsedPrice = parsePrice(input.value);
+
+  if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+    status.textContent = 'Enter a valid price.';
+    status.className = 'price-status price-status--error';
+    return;
+  }
+
+  const formattedPrice = formatPriceForCsv(parsedPrice);
+  setField(product.sourceRow, CONFIG.priceField, ['price', 'regular_price'], formattedPrice);
+  product.price = parsedPrice;
+  product.priceRaw = formattedPrice;
+  updateProductSearchText(product);
+
+  markCsvEdited();
+  status.textContent = `Price updated to ${formatPriceLabel(product.price)}. ${defaultCsvMode ? 'Saving to Netlify Blobs.' : 'Download the CSV to keep the change.'}`;
+  status.className = 'price-status price-status--success';
+
+  const currentPrice = els.productDetails.querySelector('[data-current-price]');
+  if (currentPrice) {
+    currentPrice.textContent = formatPriceLabel(product.price);
+    currentPrice.classList.toggle('is-missing', !hasValidPrice(product));
+  }
+
+  renderSummary();
+  render();
+}
+
+
+
+function saveProductBarcode(product, form) {
+  const input = form?.elements?.barcode;
+  const status = form?.querySelector('[data-barcode-status]');
+  const rawBarcode = input?.value || '';
+  const parsed = parseBarcodeForProductLookup(rawBarcode);
+  const barcode = parsed.barcode || parsed.original_barcode || normalizeScannedText(rawBarcode);
+
+  if (!barcode || isNullBarcodeValue(rawBarcode)) {
+    markProductAsNoBarcode(product, form);
+    return;
+  }
+
+  const duplicate = findProductByBarcode(parsed);
+  if (duplicate && duplicate.id !== product.id) {
+    if (status) {
+      status.textContent = `Barcode ${formatScannedTextForDisplay(barcode)} is already assigned to ${duplicate.name}.`;
+      status.className = 'barcode-editor__status barcode-editor__status--error';
+    }
+    return;
+  }
+
+  setField(product.sourceRow, CONFIG.barcodeField, ['barcode', 'barcode_number', 'product_barcode', 'gtin', 'ean', 'ean13', 'upc', 'sku'], barcode);
+  product.barcode = barcode;
+  product.barcodeAliases = buildBarcodeAliases([barcode]);
+  updateProductSearchText(product);
+  rebuildProductIndexes();
+
+  markCsvEdited();
+
+  const currentBarcode = form.querySelector('[data-current-barcode]');
+  if (currentBarcode) currentBarcode.textContent = barcode;
+
+  const detailBarcode = els.productDetails.querySelector('[data-detail-barcode]');
+  if (detailBarcode) detailBarcode.textContent = barcode;
+
+  if (status) {
+    status.textContent = `Barcode ${formatScannedTextForDisplay(barcode)} saved. ${defaultCsvMode ? 'Saving to Netlify Blobs.' : 'Download the CSV to keep the change.'}`;
+    status.className = 'barcode-editor__status barcode-editor__status--success';
+  }
+
+  render();
+}
+
+function markProductAsNoBarcode(product, form) {
+  const status = form?.querySelector('[data-barcode-status]');
+  const input = form?.elements?.barcode;
+
+  setField(product.sourceRow, CONFIG.barcodeField, ['barcodex', 'barcode', 'barcode_number', 'product_barcode', 'gtin', 'gtin14', 'ean', 'ean13', 'upc', 'sku'], 'null');
+  normalizeEmptyBarcodeField(product.sourceRow);
+  product.barcode = '';
+  product.barcodeAliases = [];
+  if (input) input.value = 'null';
+
+  updateProductSearchText(product);
+  rebuildProductIndexes();
+
+  markCsvEdited();
+
+  const currentBarcode = form?.querySelector('[data-current-barcode]');
+  if (currentBarcode) currentBarcode.textContent = 'No barcode';
+
+  const detailBarcode = els.productDetails.querySelector('[data-detail-barcode]');
+  if (detailBarcode) detailBarcode.textContent = 'No barcode';
+
+  if (status) {
+    status.textContent = `Saved as no barcode. The CSV barcode field will be null. ${defaultCsvMode ? 'Saving to Netlify Blobs.' : ''}`;
+    status.className = 'barcode-editor__status barcode-editor__status--success';
+  }
+
+  render();
+}
+
+function rebuildProductIndexes() {
+  productRouteMap = new Map();
+  productBarcodeMap = new Map();
+
+  products.forEach((product) => {
+    if (!productRouteMap.has(product.routeKey)) {
+      productRouteMap.set(product.routeKey, product);
+    }
+
+    product.barcodeAliases.forEach((alias) => {
+      const key = alias.toLowerCase();
+      if (!productBarcodeMap.has(key)) productBarcodeMap.set(key, product);
+      if (!productRouteMap.has(key)) productRouteMap.set(key, product);
+    });
+  });
+}
+
+async function startAddBarcodeScanner(product, form) {
+  const status = form?.querySelector('[data-barcode-status]');
+  const startButton = form?.querySelector('[data-action="start-add-barcode-scanner"]');
+  const stopButton = form?.querySelector('[data-action="stop-add-barcode-scanner"]');
+  const reader = form?.querySelector('#add-barcode-scanner-reader');
+
+  if (addBarcodeScannerRunning) return;
+
+  await stopBarcodeScanner();
+
+  try {
+    reader.hidden = false;
+    startButton.disabled = true;
+    stopButton.disabled = false;
+    setAddBarcodeStatus(status, 'Starting camera...', false);
+
+    addBarcodeScannerSession = await startBarcodeDetectorSession({
+      reader,
+      onDetected: async (decodedText) => handleAddBarcodeScannerSuccess(decodedText, product, form)
+    });
+
+    addBarcodeScannerRunning = true;
+    setAddBarcodeStatus(status, 'Scanning with BarcodeDetector... point the camera at the barcode to add to this product.', false);
+  } catch (error) {
+    addBarcodeScannerRunning = false;
+    if (reader) reader.hidden = true;
+    if (startButton) startButton.disabled = false;
+    if (stopButton) stopButton.disabled = true;
+    setAddBarcodeStatus(status, `Could not start scanner: ${error.message || error}`, true);
+    await stopBarcodeDetectorSession(addBarcodeScannerSession);
+    addBarcodeScannerSession = null;
+  }
+}
+
+async function stopAddBarcodeScanner(form) {
+  const container = form || els.productDetails?.querySelector('[data-barcode-form]');
+  const status = container?.querySelector('[data-barcode-status]');
+  const startButton = container?.querySelector('[data-action="start-add-barcode-scanner"]');
+  const stopButton = container?.querySelector('[data-action="stop-add-barcode-scanner"]');
+  const reader = container?.querySelector('#add-barcode-scanner-reader');
+
+  await stopBarcodeDetectorSession(addBarcodeScannerSession);
+  addBarcodeScannerRunning = false;
+  addBarcodeScannerSession = null;
+  if (reader) reader.hidden = true;
+  if (startButton) startButton.disabled = false;
+  if (stopButton) stopButton.disabled = true;
+  setAddBarcodeStatus(status, 'Scanner stopped.', false);
+}
+
+async function handleAddBarcodeScannerSuccess(decodedText, product, form) {
+  const now = Date.now();
+  const text = normalizeScannedText(decodedText);
+  if (!text) return;
+
+  if (text === lastAddBarcodeText && now - lastAddBarcodeAt < 2500) {
+    return;
+  }
+
+  lastAddBarcodeText = text;
+  lastAddBarcodeAt = now;
+
+  const input = form?.elements?.barcode;
+  if (input) input.value = text;
+  saveProductBarcode(product, form);
+  await stopAddBarcodeScanner(form);
+}
+
+function setAddBarcodeStatus(status, message, isError = false) {
+  if (!status) return;
+  status.textContent = message;
+  status.className = `barcode-editor__status${isError ? ' barcode-editor__status--error' : ''}`;
+}
+
+function getNextVisibleProduct(product) {
+  const pageProducts = getFilteredProducts();
+  const currentIndex = pageProducts.findIndex((item) => item.id === product.id);
+  return currentIndex >= 0 ? pageProducts[currentIndex + 1] : null;
+}
+
+function activateProductAndOpenNext(product) {
+  const nextProduct = getNextVisibleProduct(product);
+  const nextStatus = String(CONFIG.activeStatusValue || '1');
+
+  saveProductStatus(product, nextStatus, els.productDetails.querySelector('[data-next-product-editor]'));
+
+  if (nextProduct) {
+    navigateToProduct(nextProduct);
+    return;
+  }
+
+  const status = els.productDetails.querySelector('[data-next-product-status]');
+  if (status) {
+    status.textContent = 'This product is active. There is no next product in the current page results.';
+    status.className = 'status-message status-message--success';
+  }
+}
+
+function openNextProductWithoutChanges(product) {
+  const nextProduct = getNextVisibleProduct(product);
+  if (nextProduct) {
+    navigateToProduct(nextProduct);
+    return;
+  }
+
+  const status = els.productDetails.querySelector('[data-next-product-status]');
+  if (status) {
+    status.textContent = 'There is no next product in the current page results.';
+    status.className = 'status-message';
+  }
+}
+
+function toggleProductStatus(product, container) {
+  const nextStatus = isProductActive(product)
+    ? String(CONFIG.inactiveStatusValue || '2')
+    : String(CONFIG.activeStatusValue || '1');
+  saveProductStatus(product, nextStatus, container);
+}
+
+function saveProductStatus(product, statusCode, container) {
+  const normalizedStatus = normalizeStatusCode(statusCode);
+  setField(product.sourceRow, CONFIG.statusField, ['status'], normalizedStatus);
+  product.status = normalizedStatus;
+  updateProductSearchText(product);
+
+  markCsvEdited();
+
+  updateStatusEditorState(product, container);
+  renderSummary();
+  render();
+}
+
+function updateStatusEditorState(product, container) {
+  const active = isProductActive(product);
+  const display = getStatusDisplay(product.status);
+  const current = container?.querySelector('[data-current-status]');
+  const message = container?.querySelector('[data-status-message]');
+  const button = container?.querySelector('[data-action="toggle-status"]');
+  const pill = els.productDetails.querySelector('[data-status-pill]');
+  const detailStatus = els.productDetails.querySelector('[data-detail-status]');
+
+  if (current) current.textContent = display;
+  if (detailStatus) detailStatus.textContent = display;
+  if (message) {
+    message.textContent = `Status updated to ${display}. ${defaultCsvMode ? 'Saving to Netlify Blobs.' : 'Download the updated CSV to keep the change.'}`;
+    message.className = 'status-message status-message--success';
+  }
+  if (button) {
+    button.textContent = active ? 'Deactivate product locally' : 'Activate product locally';
+    button.className = active ? 'button button--danger' : 'button button--success';
+  }
+  if (pill) {
+    pill.textContent = display;
+    pill.className = `status-pill ${active ? 'status-pill--active' : 'status-pill--inactive'}`;
+  }
+}
+
+
+function setupStoreMapImage(container) {
+  if (!container) return;
+  const image = container.querySelector('[data-store-map-image]');
+  const status = container.querySelector('[data-shelf-status]');
+  if (!image) return;
+
+  const configuredPath = String(CONFIG.storeMapImage || '').trim();
+  const candidates = uniqueStrings([
+    configuredPath,
+    'store-map.png',
+    './store-map.png',
+    'assets/store-map.png'
+  ]).filter(Boolean);
+
+  let index = 0;
+
+  const tryCandidate = () => {
+    const nextPath = candidates[index];
+    if (!nextPath) {
+      image.hidden = true;
+      container.classList.add('store-map--missing-image');
+      if (status) {
+        status.textContent = 'Store map image not found. Upload store-map.png in the repo root.';
+        status.className = 'shelfcode-editor__status shelfcode-editor__status--error';
+      }
+      return;
+    }
+    image.hidden = false;
+    image.src = nextPath;
+  };
+
+  image.addEventListener('load', () => {
+    container.classList.remove('store-map--missing-image');
+  });
+
+  image.addEventListener('error', () => {
+    index += 1;
+    tryCandidate();
+  });
+
+  tryCandidate();
+}
+
+function renderShelfCodeDots(activeShelfCode, selectedShelfCode = activeShelfCode) {
+  const active = normalizeShelfCode(activeShelfCode);
+  const selected = normalizeShelfCode(selectedShelfCode);
+  return STORE_DOTS.map((dot) => {
+    const isActive = dot.id === active;
+    const isSelected = dot.id === selected;
+    const classes = ['map-dot', isActive ? 'active' : '', isSelected && !isActive ? 'selected' : ''].filter(Boolean).join(' ');
+    return `<button type="button" class="${classes}" data-shelf-dot="${escapeAttribute(dot.id)}" title="${escapeAttribute(dot.id)}" aria-label="Select shelfcode ${escapeAttribute(dot.id)}" style="left: ${dot.x}%; top: ${dot.y}%;">${escapeHtml(dot.id)}</button>`;
+  }).join('');
+}
+
+function normalizeShelfCode(value) {
+  return String(value || '').trim().toUpperCase().replace(/\s+/g, '');
+}
+
+function normalizeStatusCode(value) {
+  const raw = String(value ?? '').trim();
+  const activeValue = String(CONFIG.activeStatusValue || '1');
+  const inactiveValue = String(CONFIG.inactiveStatusValue || '2');
+  const lower = raw.toLowerCase();
+
+  if (!raw) return inactiveValue;
+  if (raw === inactiveValue || lower === 'inactive' || lower === 'deactivated' || lower === 'disabled' || raw === '0') {
+    return inactiveValue;
+  }
+  if (raw === activeValue || lower === 'active' || lower === 'activated' || lower === 'enabled') {
+    return activeValue;
+  }
+  return raw;
+}
+
+function isProductActive(product) {
+  return normalizeStatusCode(product?.status) !== String(CONFIG.inactiveStatusValue || '2');
+}
+
+function getStatusLabel(status) {
+  const code = normalizeStatusCode(status);
+  if (code === String(CONFIG.inactiveStatusValue || '2')) return 'Deactivated';
+  if (code === String(CONFIG.activeStatusValue || '1')) return 'Active';
+  return `Status ${code}`;
+}
+
+function getStatusDisplay(status) {
+  const code = normalizeStatusCode(status);
+  return `${getStatusLabel(code)} (${code})`;
+}
+
+function selectShelfCodeOnMap(rawShelfCode, container) {
+  const shelfCode = normalizeShelfCode(rawShelfCode);
+  const status = container?.querySelector('[data-shelf-status]');
+  const selected = container?.querySelector('[data-selected-shelfcode]');
+
+  if (!STORE_DOT_IDS.has(shelfCode)) {
+    if (status) {
+      status.textContent = 'Select a valid shelfcode from the map.';
+      status.className = 'shelfcode-editor__status shelfcode-editor__status--error';
+    }
+    return;
+  }
+
+  if (container) container.dataset.pendingShelfcode = shelfCode;
+  if (selected) selected.textContent = shelfCode;
+
+  container?.querySelectorAll('[data-shelf-dot]').forEach((button) => {
+    button.classList.toggle('selected', button.dataset.shelfDot === shelfCode && !button.classList.contains('active'));
+  });
+
+  if (status) {
+    status.textContent = `Selected ${shelfCode}. Click Update shelfcode locally to save this shelfcode.`;
+    status.className = 'shelfcode-editor__status';
+  }
+}
+
+function saveProductShelfCode(product, rawShelfCode, container) {
+  const shelfCode = normalizeShelfCode(rawShelfCode);
+  const status = container?.querySelector('[data-shelf-status]');
+
+  if (!STORE_DOT_IDS.has(shelfCode)) {
+    if (status) {
+      status.textContent = 'Select a valid shelfcode from the map.';
+      status.className = 'shelfcode-editor__status shelfcode-editor__status--error';
+    }
+    return;
+  }
+
+  setField(product.sourceRow, CONFIG.shelfCodeField, ['shelf_code', 'shelf', 'shelf_location', 'store_location', 'location'], shelfCode);
+  product.shelfCode = shelfCode;
+  updateProductSearchText(product);
+  markCsvEdited();
+
+  updateShelfCodeEditorState(container, shelfCode);
+  renderSummary();
+  render();
+}
+
+function clearProductShelfCode(product, container) {
+  setField(product.sourceRow, CONFIG.shelfCodeField, ['shelf_code', 'shelf', 'shelf_location', 'store_location', 'location'], '');
+  product.shelfCode = '';
+  updateProductSearchText(product);
+  markCsvEdited();
+
+  updateShelfCodeEditorState(container, '');
+  renderSummary();
+  render();
+}
+
+function updateShelfCodeEditorState(container, shelfCode) {
+  if (!container) return;
+  const current = container.querySelector('[data-current-shelfcode]');
+  const status = container.querySelector('[data-shelf-status]');
+  const detailShelfCode = els.productDetails.querySelector('[data-detail-shelfcode]');
+  const normalized = normalizeShelfCode(shelfCode);
+  const selected = container.querySelector('[data-selected-shelfcode]');
+
+  if (current) current.textContent = normalized || 'Not set';
+  if (selected) selected.textContent = normalized || 'None selected';
+  if (detailShelfCode) detailShelfCode.textContent = normalized || 'Not set';
+  container.dataset.currentShelfcodeValue = normalized;
+  container.dataset.pendingShelfcode = normalized;
+  container.querySelectorAll('[data-shelf-dot]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.shelfDot === normalized);
+    button.classList.toggle('selected', false);
+  });
+
+  if (status) {
+    status.textContent = normalized
+      ? `Shelfcode updated to ${normalized}. ${defaultCsvMode ? 'Saving to Netlify Blobs.' : 'Download the updated CSV to keep it.'}`
+      : `Shelfcode cleared. ${defaultCsvMode ? 'Saving to Netlify Blobs.' : 'Download the updated CSV to keep it.'}`;
+    status.className = 'shelfcode-editor__status shelfcode-editor__status--success';
+  }
+}
+
+function updateProductSearchText(product) {
+  product.searchText = [
+    product.name,
+    product.brand,
+    product.barcode,
+    product.barcodeAliases.join(' '),
+    product.category,
+    product.categories,
+    product.ingredients,
+    product.weight,
+    product.shelfCode,
+    product.status,
+    getStatusLabel(product.status)
+  ]
+    .join(' ')
+    .toLocaleLowerCase(CONFIG.locale || undefined);
+}
+
+function setImageOrFallback(image, fallback, imageUrl, altText) {
+  if (!image) return;
+  const cleanUrl = String(imageUrl || '').trim();
+
+  if (!cleanUrl) {
+    image.hidden = true;
+    image.removeAttribute('src');
+    image.alt = '';
+    if (fallback) fallback.hidden = false;
+    return;
+  }
+
+  image.hidden = false;
+  image.src = cleanUrl;
+  image.alt = altText || 'Product image';
+  if (fallback) fallback.hidden = true;
+  image.onerror = () => {
+    image.onerror = null;
+    image.hidden = true;
+    image.removeAttribute('src');
+    if (fallback) fallback.hidden = false;
+  };
+}
+
+async function lookupBarcodeAndOpen(rawBarcode, options = {}) {
+  const parsed = parseBarcodeForProductLookup(rawBarcode);
+  const displayBarcode = parsed.barcode || parsed.original_barcode || normalizeScannedText(rawBarcode);
+
+  if (!displayBarcode) {
+    updateScannerStatus('Enter or scan a barcode first.');
+    return;
+  }
+
+  if (products.length === 0) {
+    updateScannerStatus('No CSV products are loaded yet. Upload or load a CSV first.');
+    return;
+  }
+
+  const product = findProductByBarcode(parsed);
+  if (!product) {
+    updateScannerStatus(`No product found for ${displayBarcode}.`);
+    return;
+  }
+
+  els.barcodeLookup.value = displayBarcode;
+  clearFiltersForBarcodeResult();
+  navigateToProduct(product);
+  updateScannerStatus(`Found ${product.name}.`);
+
+  if (options.fromScanner) {
+    await stopBarcodeScanner();
+  }
+}
+
+function findProductByBarcode(parsedOrValue) {
+  const aliases = new Set();
+  if (typeof parsedOrValue === 'string') {
+    addBarcodeAliasVariants(parsedOrValue, aliases);
+  } else if (parsedOrValue && typeof parsedOrValue === 'object') {
+    addBarcodeAliasVariants(parsedOrValue.original_barcode, aliases);
+    addBarcodeAliasVariants(parsedOrValue.barcode, aliases);
+    if (parsedOrValue.gs1_ai_01) addBarcodeAliasVariants(parsedOrValue.gs1_ai_01, aliases);
+  }
+
+  for (const alias of aliases) {
+    const product = productBarcodeMap.get(alias.toLowerCase());
+    if (product) return product;
+  }
+  return null;
+}
+
+function clearFiltersForBarcodeResult() {
+  els.searchInput.value = '';
+  els.categoryFilter.value = 'all';
+  els.brandFilter.value = 'all';
+  applyDefaultSort();
+  render();
+}
+
+const BARCODE_DETECTOR_IMPORT_URL = 'https://fastly.jsdelivr.net/npm/barcode-detector@2.2.8/dist/es/pure.min.js';
+const BARCODE_DETECTOR_FORMATS = [
+  'qr_code',
+  'ean_13',
+  'ean_8',
+  'code_128',
+  'code_39',
+  'databar_expanded',
+  'databar',
+  'upc_a',
+  'upc_e'
+];
+const SCANNER_FRAME_INTERVAL_MS = 110;
+
+async function startBarcodeScanner() {
+  if (scannerRunning) return;
+
+  await stopAddBarcodeScanner();
+
+  try {
+    els.scannerReader.hidden = false;
+    els.startScanner.disabled = true;
+    els.stopScanner.disabled = false;
+    updateScannerStatus('Starting camera...');
+
+    scannerSession = await startBarcodeDetectorSession({
+      reader: els.scannerReader,
+      onDetected: handleScannerSuccess
+    });
+
+    scannerRunning = true;
+    updateScannerStatus('Scanning with BarcodeDetector... point the camera at a barcode.');
+  } catch (error) {
+    scannerRunning = false;
+    els.scannerReader.hidden = true;
+    els.startScanner.disabled = false;
+    els.stopScanner.disabled = true;
+    updateScannerStatus(`Could not start scanner: ${error.message || error}`);
+    await stopBarcodeDetectorSession(scannerSession);
+    scannerSession = null;
+  }
+}
+
+async function stopBarcodeScanner() {
+  await stopBarcodeDetectorSession(scannerSession);
+  scannerRunning = false;
+  scannerSession = null;
+  els.scannerReader.hidden = true;
+  els.startScanner.disabled = false;
+  els.stopScanner.disabled = true;
+  updateScannerStatus('Scanner stopped.');
+}
+
+async function getBarcodeDetectorConstructor() {
+  if (!barcodeDetectorConstructorPromise) {
+    barcodeDetectorConstructorPromise = (async () => {
+      try {
+        const module = await import(BARCODE_DETECTOR_IMPORT_URL);
+        if (module?.BarcodeDetector) return module.BarcodeDetector;
+      } catch {
+        // Fall back to the browser implementation below.
+      }
+
+      if (globalThis.BarcodeDetector) return globalThis.BarcodeDetector;
+      throw new Error('BarcodeDetector is not available in this browser.');
+    })();
+  }
+
+  return barcodeDetectorConstructorPromise;
+}
+
+async function getSupportedBarcodeDetectorFormats(BarcodeDetectorCtor) {
+  if (typeof BarcodeDetectorCtor.getSupportedFormats !== 'function') {
+    return BARCODE_DETECTOR_FORMATS;
+  }
+
+  try {
+    const supportedFormats = await BarcodeDetectorCtor.getSupportedFormats();
+    const supportedSet = new Set(supportedFormats);
+    const formats = BARCODE_DETECTOR_FORMATS.filter((format) => supportedSet.has(format));
+    return formats.length ? formats : undefined;
+  } catch {
+    return BARCODE_DETECTOR_FORMATS;
+  }
+}
+
+async function startBarcodeDetectorSession({ reader, onDetected }) {
+  if (!reader) throw new Error('Scanner container not found.');
+  if (!navigator.mediaDevices?.getUserMedia) {
+    throw new Error('Camera access is not available. Use HTTPS or localhost and a supported browser.');
+  }
+
+  const BarcodeDetectorCtor = await getBarcodeDetectorConstructor();
+  const formats = await getSupportedBarcodeDetectorFormats(BarcodeDetectorCtor);
+  const detector = new BarcodeDetectorCtor(formats ? { formats } : undefined);
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: {
+      facingMode: { ideal: 'environment' },
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
+    }
+  });
+
+  const video = document.createElement('video');
+  video.className = 'scanner-reader__video';
+  video.autoplay = true;
+  video.muted = true;
+  video.playsInline = true;
+  video.setAttribute('playsinline', '');
+  video.srcObject = stream;
+
+  reader.replaceChildren(video);
+  reader.hidden = false;
+
+  await video.play();
+
+  const session = {
+    active: true,
+    detector,
+    lastFrameAt: 0,
+    onDetected,
+    rafId: 0,
+    reader,
+    stream,
+    video
+  };
+
+  const scanFrame = async (timestamp) => {
+    if (!session.active) return;
+
+    if (timestamp - session.lastFrameAt >= SCANNER_FRAME_INTERVAL_MS && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      session.lastFrameAt = timestamp;
+      try {
+        const barcodes = await detector.detect(video);
+        const firstBarcode = barcodes.find((barcode) => normalizeScannedText(barcode.rawValue));
+        if (firstBarcode) {
+          await onDetected(firstBarcode.rawValue, firstBarcode);
+        }
+      } catch {
+        // Detection can fail while the camera is warming up; keep scanning.
+      }
+    }
+
+    if (session.active) {
+      session.rafId = window.requestAnimationFrame(scanFrame);
+    }
+  };
+
+  session.rafId = window.requestAnimationFrame(scanFrame);
+  return session;
+}
+
+async function stopBarcodeDetectorSession(session) {
+  if (!session) return;
+  session.active = false;
+
+  if (session.rafId) {
+    window.cancelAnimationFrame(session.rafId);
+  }
+
+  try {
+    session.video?.pause();
+  } catch {
+    // Ignore browsers that already paused the video.
+  }
+
+  session.stream?.getTracks().forEach((track) => track.stop());
+
+  if (session.video) {
+    session.video.srcObject = null;
+  }
+
+  if (session.reader) {
+    session.reader.replaceChildren();
+  }
+}
+
+async function handleScannerSuccess(decodedText) {
+  const now = Date.now();
+  const text = normalizeScannedText(decodedText);
+  if (!text) return;
+
+  if (text === lastScannerText && now - lastScannerAt < 2500) {
+    return;
+  }
+
+  lastScannerText = text;
+  lastScannerAt = now;
+  updateScannerStatus(`Scanned ${formatScannedTextForDisplay(text)}. Looking up product...`);
+  await lookupBarcodeAndOpen(text, { fromScanner: true });
+}
+
+function updateScannerStatus(message) {
+  els.scannerStatus.textContent = message;
+}
+
+function normalizeScannedText(value) {
+  return String(value || '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim();
+}
+
+function stripScannerSymbologyIdentifier(value) {
+  return normalizeScannedText(value).replace(/^\][A-Za-z0-9]{2}/, '');
+}
+
+function getCompactDigits(value) {
+  return normalizeScannedText(value).replace(/\s/g, '');
+}
+
+function formatScannedTextForDisplay(value) {
+  return normalizeScannedText(value).replace(/\x1D/g, '<GS>');
+}
+
+function isEan13(value) {
+  return /^\d{13}$/.test(getCompactDigits(value));
+}
+
+function calculateEan13CheckDigit(first12Digits) {
+  const digits = getCompactDigits(first12Digits);
+  if (!/^\d{12}$/.test(digits)) return null;
+
+  const sum = digits
+    .split('')
+    .map(Number)
+    .reduce((total, digit, index) => total + digit * (index % 2 === 0 ? 1 : 3), 0);
+
+  return String((10 - (sum % 10)) % 10);
+}
+
+function isVariableWeightEan13(barcode) {
+  const value = getCompactDigits(barcode);
+  return isEan13(value) && value.startsWith('23');
+}
+
+function extractWeightKgFromEan13(barcode) {
+  const value = getCompactDigits(barcode);
+  if (!isVariableWeightEan13(value)) return null;
+  const weightDigits = value.slice(7, 12);
+  const weightKg = Number(weightDigits) / 1000;
+  return Number.isFinite(weightKg) ? weightKg : null;
+}
+
+function normalizeVariableWeightEan13(barcode) {
+  const value = getCompactDigits(barcode);
+  if (!isVariableWeightEan13(value)) return value;
+
+  const first12DigitsWithoutWeight = value.slice(0, 7) + '00000';
+  const checkDigit = calculateEan13CheckDigit(first12DigitsWithoutWeight);
+  return `${first12DigitsWithoutWeight}${checkDigit}`;
+}
+
+function extractWeightKgFromGs1_3103(weightDigits) {
+  if (!/^\d{6}$/.test(String(weightDigits || ''))) return null;
+  const weightKg = Number(weightDigits) / 1000;
+  return Number.isFinite(weightKg) ? weightKg : null;
+}
+
+function parseBracketedGs1ApplicationIdentifiers(rawBarcode) {
+  const text = stripScannerSymbologyIdentifier(rawBarcode);
+  const gtinMatch = text.match(/\(01\)\s*(\d{14})/);
+  if (!gtinMatch) return null;
+
+  const weightMatch = text.match(/\(3103\)\s*(\d{6})/);
+  return {
+    gtin: gtinMatch[1],
+    weight3103Digits: weightMatch ? weightMatch[1] : null
+  };
+}
+
+function parseUnbracketedGs1ApplicationIdentifiers(rawBarcode) {
+  const groupSeparator = '\x1D';
+  const text = stripScannerSymbologyIdentifier(rawBarcode).replace(/[()\s]/g, '');
+
+  if (/^\d{14}$/.test(text)) {
+    return {
+      gtin: text,
+      weight3103Digits: null
+    };
+  }
+
+  const values = {};
+  let index = 0;
+
+  while (index < text.length) {
+    if (text[index] === groupSeparator) {
+      index += 1;
+      continue;
+    }
+
+    if (text.startsWith('01', index) && /^\d{14}/.test(text.slice(index + 2, index + 16))) {
+      values['01'] = text.slice(index + 2, index + 16);
+      index += 16;
+      continue;
+    }
+
+    if (text.startsWith('3103', index) && /^\d{6}/.test(text.slice(index + 4, index + 10))) {
+      values['3103'] = text.slice(index + 4, index + 10);
+      index += 10;
+      continue;
+    }
+
+    const fixedLengthAiDataLengths = {
+      '00': 18,
+      '02': 14,
+      '11': 6,
+      '13': 6,
+      '15': 6,
+      '17': 6
+    };
+    const ai2 = text.slice(index, index + 2);
+    const fixedDataLength = fixedLengthAiDataLengths[ai2];
+
+    if (fixedDataLength && /^\d+$/.test(text.slice(index + 2, index + 2 + fixedDataLength))) {
+      values[ai2] = text.slice(index + 2, index + 2 + fixedDataLength);
+      index += 2 + fixedDataLength;
+      continue;
+    }
+
+    if (text.startsWith('10', index) || text.startsWith('21', index)) {
+      const separatorIndex = text.indexOf(groupSeparator, index + 2);
+      index = separatorIndex === -1 ? text.length : separatorIndex + 1;
+      continue;
+    }
+
+    break;
+  }
+
+  if (!values['01']) return null;
+  return {
+    gtin: values['01'],
+    weight3103Digits: values['3103'] || null
+  };
+}
+
+function parseGs1ForProductLookup(rawBarcode) {
+  const originalBarcode = normalizeScannedText(rawBarcode);
+  const parsedGs1 = parseBracketedGs1ApplicationIdentifiers(originalBarcode) || parseUnbracketedGs1ApplicationIdentifiers(originalBarcode);
+
+  if (!parsedGs1 || !/^\d{14}$/.test(parsedGs1.gtin)) {
+    return null;
+  }
+
+  const weightKg = parsedGs1.weight3103Digits ? extractWeightKgFromGs1_3103(parsedGs1.weight3103Digits) : null;
+
+  return {
+    original_barcode: originalBarcode,
+    barcode: parsedGs1.gtin,
+    sold_by_weight: weightKg !== null,
+    approximate_weight_kg: weightKg,
+    barcode_type: weightKg !== null ? 'gs1_gtin_01_weight_3103' : 'gs1_gtin_01',
+    gs1_ai_01: parsedGs1.gtin,
+    gs1_ai_3103: parsedGs1.weight3103Digits
+  };
+}
+
+function parseBarcodeForProductLookup(rawBarcode) {
+  const originalBarcode = normalizeScannedText(rawBarcode);
+  const compactBarcode = getCompactDigits(originalBarcode);
+  const gs1Barcode = parseGs1ForProductLookup(originalBarcode);
+
+  if (gs1Barcode) return gs1Barcode;
+
+  if (isVariableWeightEan13(compactBarcode)) {
+    const weightKg = extractWeightKgFromEan13(compactBarcode);
+    const normalizedBarcode = normalizeVariableWeightEan13(compactBarcode);
+
+    return {
+      original_barcode: compactBarcode,
+      barcode: normalizedBarcode,
+      sold_by_weight: true,
+      approximate_weight_kg: weightKg,
+      barcode_type: 'ean13_variable_weight_23',
+      gs1_ai_01: null,
+      gs1_ai_3103: null
+    };
+  }
+
+  return {
+    original_barcode: compactBarcode,
+    barcode: compactBarcode,
+    sold_by_weight: false,
+    approximate_weight_kg: null,
+    barcode_type: isEan13(compactBarcode) ? 'ean13_normal' : 'manual_label',
+    gs1_ai_01: null,
+    gs1_ai_3103: null
+  };
+}
+
 function clearFilters() {
   els.searchInput.value = '';
   els.categoryFilter.value = 'all';
@@ -588,9 +2574,9 @@ function clearFilters() {
 }
 
 function applyDefaultSort() {
-  const defaultSort = CONFIG.defaultSort || 'source-code-asc';
+  const defaultSort = CONFIG.defaultSort || 'name-asc';
   const hasOption = [...els.sortSelect.options].some((option) => option.value === defaultSort);
-  els.sortSelect.value = hasOption ? defaultSort : 'source-code-asc';
+  els.sortSelect.value = hasOption ? defaultSort : 'name-asc';
 }
 
 function hasValidPrice(product) {
@@ -619,14 +2605,60 @@ async function copyText(text, button, successLabel) {
   }
 }
 
+function downloadCurrentCsv() {
+  if (!currentRows.length) return;
+  currentRows.forEach((row) => normalizeEmptyBarcodeField(row));
+  const activeRows = products
+    .filter((product) => isProductActive(product))
+    .map((product) => product.sourceRow);
+  const csv = serializeCsv(currentHeaders, activeRows);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10);
+  link.href = url;
+  link.download = `active-products-updated-${date}.csv`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function serializeCsv(headers, rows) {
+  const cleanHeaders = normalizeHeaders(headers.length ? headers : collectHeaders(rows));
+  const lines = [cleanHeaders.map(csvEscape).join(',')];
+  rows.forEach((row) => {
+    lines.push(cleanHeaders.map((header) => csvEscape(getField(row, [header]))).join(','));
+  });
+  return `${lines.join('\r\n')}\r\n`;
+}
+
+function csvEscape(value) {
+  const text = String(value ?? '');
+  if (/[",\r\n]/.test(text)) {
+    return `"${text.replaceAll('"', '""')}"`;
+  }
+  return text;
+}
+
 function showError(message) {
+  products = [];
+  productRouteMap = new Map();
+  productBarcodeMap = new Map();
+  resetSummary();
+  buildFilterOptions();
   els.productGrid.replaceChildren();
   els.resultCount.textContent = 'Could not load products';
   els.emptyState.hidden = true;
+  els.downloadCsv.disabled = true;
   const error = document.createElement('div');
   error.className = 'error-box';
   error.textContent = message;
   els.productGrid.append(error);
+}
+
+function uniqueStrings(values) {
+  return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
 }
 
 function escapeHtml(value) {

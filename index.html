@@ -3,18 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Product display app for grocery product data." />
-    <title>Store Product Display</title>
-    <link rel="icon" href="assets/placeholder.svg" type="image/svg+xml" />
+    <meta name="description" content="kronan-display-app.v1.6 manual CSV product viewer with barcode lookup, map shelfcode editing, barcode editing, and next-product activation workflow." />
+    <title>kronan-display-app.v1.6</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="hero">
       <div class="hero__content">
-        <p class="eyebrow">Product display app</p>
-        <h1 id="store-name">Store Product Display</h1>
+        <p class="eyebrow">Manual CSV product display</p>
+        <h1 id="store-name">kronan-display-app.v1.6</h1>
         <p class="hero__text">
-          Browse product results from the latest n8n upload, with the included CSV file as a fallback.
+          Load the shared default CSV or upload a CSV in the browser, scan or enter a barcode, open a product, use the map or add barcode, then click Next product to activate it. Default CSV edits are saved to Netlify Blobs.
         </p>
       </div>
       <div class="hero__panel" aria-label="Product summary">
@@ -27,17 +26,42 @@
           <span class="metric-label">categories</span>
         </div>
         <div>
-          <span id="average-price" class="metric">—</span>
+          <span id="average-price" class="metric">-</span>
           <span class="metric-label">average price</span>
         </div>
       </div>
     </header>
 
     <main class="page-shell">
+      <section class="scanner-panel" aria-label="Barcode lookup">
+        <div class="scanner-panel__header">
+          <div>
+            <p class="eyebrow eyebrow--dark">Barcode lookup</p>
+            <h2>Scan or enter a barcode</h2>
+            <p>If the barcode exists in the loaded CSV, the app opens that product so you can review the map, add barcode details, and continue to the next product.</p>
+          </div>
+          <div class="scanner-panel__actions">
+            <button id="start-scanner" type="button" class="button">Start camera scan</button>
+            <button id="stop-scanner" type="button" class="button button--secondary" disabled>Stop scan</button>
+          </div>
+        </div>
+
+        <div class="scanner-lookup-row">
+          <label class="barcode-box">
+            <span>Barcode / GTIN</span>
+            <input id="barcode-lookup" type="text" inputmode="numeric" autocomplete="off" placeholder="Scan or type EAN / GTIN" />
+          </label>
+          <button id="lookup-barcode" type="button" class="button">Open product</button>
+        </div>
+
+        <div id="scanner-reader" class="scanner-reader" hidden></div>
+        <small id="scanner-status" class="scanner-status" role="status" aria-live="polite">Load or upload a CSV file, then scan or enter a barcode.</small>
+      </section>
+
       <section class="toolbar" aria-label="Product filters">
         <label class="search-box">
           <span>Search products</span>
-          <input id="search-input" type="search" autocomplete="off" placeholder="Search by name, brand, barcode, source code, ingredients..." />
+          <input id="search-input" type="search" autocomplete="off" placeholder="Search by name, brand, barcode, shelfcode, status, ingredients..." />
         </label>
 
         <label>
@@ -57,23 +81,21 @@
         <label>
           <span>Sort</span>
           <select id="sort-select">
-            <option value="source-code-asc" selected>Source code A–Z</option>
-            <option value="source-code-desc">Source code Z–A</option>
-            <option value="name-asc">Name A–Z</option>
+            <option value="name-asc" selected>Name A-Z</option>
             <option value="price-asc">Price low to high</option>
             <option value="price-desc">Price high to low</option>
-            <option value="brand-asc">Brand A–Z</option>
-            <option value="category-asc">Category A–Z</option>
+            <option value="brand-asc">Brand A-Z</option>
+            <option value="category-asc">Category A-Z</option>
+            <option value="shelfcode-asc">Shelfcode A-Z</option>
           </select>
         </label>
 
-        <button id="refresh-data" type="button" class="button button--secondary">Refresh data</button>
         <button id="clear-filters" type="button" class="button button--secondary">Clear filters</button>
       </section>
 
       <section class="status-line" aria-live="polite">
-        <span id="result-count">Loading products…</span>
-        <span id="data-source-label">Source: CSV</span>
+        <span id="result-count">Load the default CSV or upload a CSV file to load products.</span>
+        <span id="data-source-label">Source: no CSV loaded</span>
       </section>
 
       <section id="category-chips" class="chip-row" aria-label="Quick category filters"></section>
@@ -82,30 +104,37 @@
 
       <section id="empty-state" class="empty-state" hidden>
         <h2>No products found</h2>
-        <p>Try changing the search, category, brand, or sort settings.</p>
+        <p>Load the default CSV, upload a CSV file, or try changing the search, category, brand, or sort settings.</p>
       </section>
 
       <section class="import-helper">
         <div>
-          <h2>Local CSV preview</h2>
-          <p>Use this only for quick testing. On Netlify, replace <code>data/products.csv</code> or update <code>config.js</code>.</p>
+          <h2>Manual CSV upload</h2>
+          <p>
+            Use the shared default CSV backed by Netlify Blobs, or upload a temporary CSV in the browser. Edits to the default CSV are saved back to Netlify Blobs; uploaded CSV edits stay local until you download them.
+          </p>
         </div>
-        <label class="file-loader">
-          <span>Preview another CSV file</span>
-          <input id="csv-file-input" type="file" accept=".csv,text/csv" />
-        </label>
+        <div class="import-actions">
+          <label class="file-loader">
+            <span>Upload CSV file</span>
+            <input id="csv-file-input" type="file" accept=".csv,text/csv" />
+          </label>
+          <button id="load-default-csv" type="button" class="button">Load default CSV</button>
+          <button id="download-csv" type="button" class="button button--secondary" disabled>Download updated CSV</button>
+        </div>
       </section>
     </main>
 
-    <dialog id="product-dialog" class="product-dialog">
-      <button id="dialog-close" type="button" class="dialog-close" aria-label="Close product details">×</button>
+    <section id="product-dialog" class="product-dialog" role="dialog" aria-modal="true" aria-label="Product details" aria-hidden="true" hidden>
+      <button id="dialog-close" type="button" class="dialog-close" aria-label="Close product details">x</button>
       <article id="product-details" class="product-details"></article>
-    </dialog>
+    </section>
 
     <template id="product-card-template">
       <article class="product-card">
         <a class="product-card__image-link" href="#">
           <img class="product-card__image" src="" alt="" loading="lazy" />
+          <span class="product-card__image-fallback" hidden>No image</span>
         </a>
         <div class="product-card__body">
           <div class="product-card__topline">
@@ -117,6 +146,9 @@
           <div class="product-card__meta">
             <strong class="product-card__price"></strong>
             <span class="product-card__weight"></span>
+          </div>
+          <div class="product-card__meta product-card__meta--subtle">
+            <span class="product-card__shelfcode"></span>
           </div>
           <button type="button" class="button product-card__button">Open product</button>
         </div>
