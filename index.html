@@ -3,17 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="display-app.v1.7 manual CSV product viewer with BarcodeDetector barcode lookup and a full-screen product detail editor for price, shelfcode, and status." />
-    <title>display-app.v1.7</title>
+    <meta name="description" content="display-app.v1.9 manual CSV/JSON product viewer with BarcodeDetector barcode lookup and a full-screen product detail editor for price, shelfcode, and status." />
+    <title>display-app.v1.9</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="hero">
       <div class="hero__content">
-        <p class="eyebrow">Manual CSV product display</p>
-        <h1 id="store-name">display-app.v1.7</h1>
+        <p class="eyebrow">Manual CSV/JSON product display</p>
+        <h1 id="store-name">display-app.v1.9</h1>
         <p class="hero__text">
-          Upload a CSV in the browser, scan or enter a barcode, open a product, then update price, shelfcode, or status locally before downloading the updated CSV.
+          Upload a CSV or generated product JSON in the browser, scan or enter a barcode, open a product, then update price, shelfcode, or status locally before downloading the updated CSV.
         </p>
       </div>
       <div class="hero__panel" aria-label="Product summary">
@@ -94,8 +94,8 @@
       </section>
 
       <section class="status-line" aria-live="polite">
-        <span id="result-count">Upload a CSV file to load products.</span>
-        <span id="data-source-label">Source: no CSV loaded</span>
+        <span id="result-count">Upload a CSV or JSON file to load products.</span>
+        <span id="data-source-label">Source: no file loaded</span>
       </section>
 
       <section id="category-chips" class="chip-row" aria-label="Quick category filters"></section>
@@ -104,20 +104,24 @@
 
       <section id="empty-state" class="empty-state" hidden>
         <h2>No products found</h2>
-        <p>Upload a CSV file or try changing the search, category, brand, or sort settings.</p>
+        <p>Upload a CSV or JSON file, or try changing the search, category, brand, or sort settings.</p>
       </section>
 
       <section class="import-helper">
         <div>
-          <h2>Manual CSV upload</h2>
+          <h2>Manual upload</h2>
           <p>
-            Upload your product CSV here. Price, shelfcode, and status edits stay local until you click <strong>Download updated CSV</strong> and save the new file wherever you manage your products.
+            Upload your product CSV here, or import a generated product JSON file. Price, shelfcode, and status edits stay local until you click <strong>Download updated CSV</strong> and save the new file wherever you manage your products.
           </p>
         </div>
         <div class="import-actions">
           <label class="file-loader">
             <span>Upload CSV file</span>
             <input id="csv-file-input" type="file" accept=".csv,text/csv" />
+          </label>
+          <label class="file-loader">
+            <span>Import JSON file</span>
+            <input id="json-file-input" type="file" accept=".json,application/json" />
           </label>
           <button id="download-csv" type="button" class="button button--secondary" disabled>Download updated CSV</button>
         </div>

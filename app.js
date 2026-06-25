@@ -1,5 +1,5 @@
 const DEFAULT_CONFIG = {
-  storeName: 'display-app.v1.7',
+  storeName: 'display-app.v1.9',
   dataSource: '',
   currency: 'ISK',
   locale: 'is-IS',
@@ -97,6 +97,7 @@ const els = {
   productGrid: document.querySelector('#product-grid'),
   emptyState: document.querySelector('#empty-state'),
   fileInput: document.querySelector('#csv-file-input'),
+  jsonFileInput: document.querySelector('#json-file-input'),
   downloadCsv: document.querySelector('#download-csv'),
   dialog: document.querySelector('#product-dialog'),
   dialogClose: document.querySelector('#dialog-close'),
@@ -126,7 +127,7 @@ let currentRows = [];
 let currentHeaders = [];
 let productRouteMap = new Map();
 let productBarcodeMap = new Map();
-let activeSourceName = CONFIG.dataSource || 'No CSV loaded';
+let activeSourceName = CONFIG.dataSource || 'No file loaded';
 let csvDirty = false;
 let lastFocusedBeforeProduct = null;
 let barcodeDetector = null;
@@ -178,6 +179,23 @@ function bindEvents() {
     }
   });
 
+
+  els.jsonFileInput?.addEventListener('change', async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const rows = normalizeJsonPayload(JSON.parse(text));
+      setProducts(rows, file.name, collectHeaders(rows), { dirty: false });
+      updateScannerStatus(`Imported ${products.length} product${products.length === 1 ? '' : 's'} from ${file.name}. Scan or enter a barcode.`);
+    } catch (error) {
+      showError(`Could not read JSON file: ${error.message}`);
+    } finally {
+      event.target.value = '';
+    }
+  });
+
   els.dialogClose.addEventListener('click', () => closeProductOverlay({ clearHash: true }));
   els.dialog.addEventListener('click', (event) => {
     if (event.target === els.dialog) {
@@ -196,10 +214,10 @@ function bindEvents() {
 
 async function loadInitialData() {
   if (!CONFIG.dataSource) {
-    setProducts([], 'No CSV loaded', [], { dirty: false });
-    els.resultCount.textContent = 'Upload a CSV file to load products.';
-    els.dataSourceLabel.textContent = 'Source: no CSV loaded';
-    updateScannerStatus('Upload a CSV file, then scan or enter a barcode.');
+    setProducts([], 'No file loaded', [], { dirty: false });
+    els.resultCount.textContent = 'Upload a CSV or JSON file to load products.';
+    els.dataSourceLabel.textContent = 'Source: no file loaded';
+    updateScannerStatus('Upload a CSV or JSON file, then scan or enter a barcode.');
     return;
   }
 
@@ -224,19 +242,50 @@ async function loadInitialData() {
     updateScannerStatus(`Loaded ${products.length} products. Scan or enter a barcode.`);
   } catch (error) {
     showError(`Could not load product data. ${error.message}`);
-    updateScannerStatus('Could not load product data. Upload a CSV file, then scan or enter a barcode.');
+    updateScannerStatus('Could not load product data. Upload a CSV or JSON file, then scan or enter a barcode.');
   }
 }
 
 function normalizeJsonPayload(payload) {
-  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload)) return payload.map(normalizeJsonProductRow);
   if (payload && typeof payload === 'object') {
-    if (Array.isArray(payload.products)) return payload.products;
-    if (Array.isArray(payload.data)) return payload.data;
-    if (Array.isArray(payload.rows)) return payload.rows;
-    if (Array.isArray(payload.items)) return payload.items;
+    if (Array.isArray(payload.products)) return payload.products.map(normalizeJsonProductRow);
+    if (Array.isArray(payload.data)) return payload.data.map(normalizeJsonProductRow);
+    if (Array.isArray(payload.rows)) return payload.rows.map(normalizeJsonProductRow);
+    if (Array.isArray(payload.items)) return payload.items.map(normalizeJsonProductRow);
+    if (payload.product && typeof payload.product === 'object') return [normalizeJsonProductRow(payload.product)];
+    if (looksLikeProductObject(payload)) return [normalizeJsonProductRow(payload)];
   }
-  throw new Error('JSON must be an array, or an object with products/data/rows/items.');
+  throw new Error('JSON must be a product object, an object with product, or an array/object with products/data/rows/items.');
+}
+
+function looksLikeProductObject(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return ['name', 'sku', 'barcode', 'barcodex', 'gtin', 'brand', 'price', 'cost', 'image', 'img', 'shelfcode'].some((key) => getField(value, [key]));
+}
+
+function normalizeJsonProductRow(value) {
+  const row = value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : { name: String(value ?? '') };
+
+  copyJsonField(row, 'weight_or_volume', ['weight']);
+  copyJsonField(row, 'weight', ['weight_or_volume']);
+  copyJsonField(row, 'image', [CONFIG.imageField, 'img']);
+  copyJsonField(row, 'img', ['image']);
+  copyJsonField(row, 'barcode', [CONFIG.barcodeField, 'barcodex']);
+  copyJsonField(row, 'barcodex', ['barcode', 'gtin', 'ean']);
+  copyJsonField(row, 'price', [CONFIG.priceField, 'cost']);
+  copyJsonField(row, 'cost', ['price']);
+  copyJsonField(row, 'store_categories', ['category']);
+  copyJsonField(row, 'ingredients_icelandic', ['ingredients']);
+
+  return row;
+}
+
+function copyJsonField(row, fromKey, toKeys) {
+  if (!getField(row, [fromKey])) return;
+  toKeys.forEach((toKey) => {
+    if (toKey && !getField(row, [toKey])) row[toKey] = row[fromKey];
+  });
 }
 
 function setProducts(rows, sourceName, headers = [], options = {}) {
@@ -575,7 +624,7 @@ function resetSummary() {
   els.totalProducts.textContent = '0';
   els.totalCategories.textContent = '0';
   els.averagePrice.textContent = '-';
-  els.dataSourceLabel.textContent = 'Source: no CSV loaded';
+  els.dataSourceLabel.textContent = 'Source: no file loaded';
 }
 
 function renderSummary() {
@@ -1302,7 +1351,7 @@ async function lookupBarcodeAndOpen(rawBarcode, options = {}) {
   }
 
   if (products.length === 0) {
-    updateScannerStatus('No CSV products are loaded yet. Upload or load a CSV first.');
+    updateScannerStatus('No products are loaded yet. Upload a CSV or import a JSON file first.');
     return;
   }
 
